@@ -174,7 +174,7 @@ export default function Home() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.04] bg-[#050505]/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
-            <span className="font-[family-name:var(--font-syne)] font-bold text-[15px] tracking-[-0.02em]">
+            <span className="font-[family-name:var(--font-heading)] font-bold text-[15px] tracking-[-0.02em]">
               Rumble Pulse
             </span>
           </a>
@@ -226,7 +226,7 @@ export default function Home() {
                 Autonomous Tipping Agent
               </p>
 
-              <h1 className="animate-in delay-1 font-[family-name:var(--font-syne)] text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-[-0.04em] leading-[0.95]">
+              <h1 className="animate-in delay-1 font-[family-name:var(--font-heading)] text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-[-0.04em] leading-[0.9] uppercase">
                 Let your agent
                 <br />
                 <span className="text-[#00D4FF]">tip for you.</span>
@@ -288,7 +288,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
               <div>
                 <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">01</span>
-                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
+                <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
                   Set your rules
                 </h3>
                 <p className="text-zinc-500 text-sm leading-relaxed">
@@ -298,7 +298,7 @@ export default function Home() {
               </div>
               <div>
                 <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">02</span>
-                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
+                <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
                   Agent watches
                 </h3>
                 <p className="text-zinc-500 text-sm leading-relaxed">
@@ -308,7 +308,7 @@ export default function Home() {
               </div>
               <div>
                 <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">03</span>
-                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
+                <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
                   Tips execute onchain
                 </h3>
                 <p className="text-zinc-500 text-sm leading-relaxed">
@@ -355,7 +355,7 @@ export default function Home() {
               {/* Smart Treasury */}
               <div className="card p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="font-[family-name:var(--font-syne)] text-base font-bold tracking-[-0.01em]">
+                  <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em]">
                     Smart Treasury Split
                   </h3>
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-600 shrink-0" aria-hidden="true">
@@ -372,7 +372,7 @@ export default function Home() {
               {/* LLM Reasoning */}
               <div className="card p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="font-[family-name:var(--font-syne)] text-base font-bold tracking-[-0.01em]">
+                  <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em]">
                     LLM Reasoning
                   </h3>
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-600 shrink-0" aria-hidden="true">
@@ -390,7 +390,7 @@ export default function Home() {
               {/* Budget Guardian — full width */}
               <div className="md:col-span-2 card p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
                 <div className="flex-1">
-                  <h3 className="font-[family-name:var(--font-syne)] text-base font-bold tracking-[-0.01em] mb-2">
+                  <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em] mb-2">
                     Budget Guardian
                   </h3>
                   <p className="text-zinc-500 text-sm leading-relaxed">
