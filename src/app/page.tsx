@@ -2,186 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* ─── Icon Components ─── */
-function RulesIcon() {
-  return (
-    <svg
-      width="48"
-      height="48"
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <rect
-        x="8"
-        y="6"
-        width="32"
-        height="36"
-        rx="4"
-        stroke="#00D4FF"
-        strokeWidth="2"
-        fill="none"
-      />
-      <line
-        x1="14"
-        y1="16"
-        x2="34"
-        y2="16"
-        stroke="#00D4FF"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="14"
-        y1="24"
-        x2="28"
-        y2="24"
-        stroke="#A855F7"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="14"
-        y1="32"
-        x2="22"
-        y2="32"
-        stroke="#F5A623"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <circle cx="36" cy="36" r="8" fill="#000" stroke="#00D4FF" strokeWidth="2" />
-      <path
-        d="M33 36L35.5 38.5L39 33.5"
-        stroke="#00D4FF"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function WatchIcon() {
-  return (
-    <svg
-      width="48"
-      height="48"
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <circle cx="24" cy="24" r="18" stroke="#A855F7" strokeWidth="2" fill="none" />
-      <circle cx="24" cy="24" r="4" fill="#A855F7" />
-      <path
-        d="M24 12V24L32 28"
-        stroke="#A855F7"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx="24"
-        cy="24"
-        r="18"
-        stroke="#A855F7"
-        strokeWidth="1"
-        strokeDasharray="4 4"
-        opacity="0.3"
-      />
-      <circle cx="24" cy="6" r="2" fill="#00D4FF" />
-      <circle cx="42" cy="24" r="2" fill="#F5A623" />
-      <circle cx="24" cy="42" r="2" fill="#00D4FF" />
-      <circle cx="6" cy="24" r="2" fill="#F5A623" />
-    </svg>
-  );
-}
-
-function TipIcon() {
-  return (
-    <svg
-      width="48"
-      height="48"
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M12 36L24 8L36 36"
-        stroke="#F5A623"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path
-        d="M16 28H32"
-        stroke="#F5A623"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <circle cx="24" cy="40" r="4" stroke="#00D4FF" strokeWidth="2" fill="none" />
-      <path
-        d="M22 40H26"
-        stroke="#00D4FF"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 12L4 8"
-        stroke="#A855F7"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-      <path
-        d="M40 12L44 8"
-        stroke="#A855F7"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-      <path
-        d="M24 4V2"
-        stroke="#00D4FF"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-    </svg>
-  );
-}
-
 /* ─── Hero Video Background ─── */
 const HLS_SRC =
   "https://stream.mux.com/hUT6X11m1Vkw1QMxPOLgI761x2cfpi9bHFbi5cNg4014.m3u8";
 
 function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [streamFailed, setStreamFailed] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // play() can reject due to autoplay policy — that's fine, ignore it.
-    // The muted+playsInline+autoPlay attributes handle most browsers.
     const tryPlay = () => {
-      video.play().catch(() => {
-        /* autoplay blocked — browser will show paused frame, not a failure */
-      });
+      video.play().catch(() => {});
     };
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari native HLS
       video.src = HLS_SRC;
       tryPlay();
-      video.addEventListener("error", () => setStreamFailed(true));
-      return () => {
-        video.removeEventListener("error", () => setStreamFailed(true));
-      };
+      const onError = () => setFailed(true);
+      video.addEventListener("error", onError);
+      return () => video.removeEventListener("error", onError);
     }
 
     let hls: import("hls.js").default | null = null;
@@ -190,17 +32,14 @@ function HeroVideo() {
     import("hls.js").then((mod) => {
       if (destroyed) return;
       const Hls = mod.default;
-      if (!Hls.isSupported()) {
-        setStreamFailed(true);
-        return;
-      }
+      if (!Hls.isSupported()) return setFailed(true);
       hls = new Hls({ autoStartLoad: true });
       hls.loadSource(HLS_SRC);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          setStreamFailed(true);
+      hls.on(Hls.Events.ERROR, (_e, d) => {
+        if (d.fatal) {
+          setFailed(true);
           hls?.destroy();
         }
       });
@@ -212,17 +51,7 @@ function HeroVideo() {
     };
   }, []);
 
-  if (streamFailed) {
-    return (
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% 50%, rgba(0,212,255,0.15) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 70% 30%, rgba(168,85,247,0.1) 0%, transparent 60%)",
-        }}
-      />
-    );
-  }
+  if (failed) return null;
 
   return (
     <video
@@ -232,567 +61,355 @@ function HeroVideo() {
       muted
       playsInline
       aria-hidden="true"
-      className="absolute inset-0 w-full h-full object-cover opacity-30"
+      className="absolute inset-0 w-full h-full object-cover opacity-20"
     />
   );
 }
 
-/* ─── Agent Log Component ─── */
+/* ─── Agent Log ─── */
 const LOG_LINES = [
-  { time: "00:00:01", type: "system", text: "Agent initialized. Loading config..." },
-  { time: "00:00:02", type: "info", text: "Connected to Rumble stream: @CryptoMaverick" },
-  { time: "00:00:05", type: "event", text: "Event detected: viewer_count spike 1,247 → 3,891" },
-  { time: "00:00:06", type: "think", text: "LLM reasoning: High engagement detected. Checking treasury..." },
-  { time: "00:00:07", type: "info", text: "Treasury balance: 142.50 USDT | Budget remaining: 89.00 USDT" },
-  { time: "00:00:08", type: "think", text: "Evaluating tip amount: engagement_score=0.87, sentiment=positive" },
-  { time: "00:00:09", type: "action", text: "Executing tip: 2.50 USDT → @CryptoMaverick via WDK" },
-  { time: "00:00:10", type: "success", text: "TX confirmed: 0x7a3f...e91d | Gas: 0.0021 ETH" },
-  { time: "00:00:12", type: "event", text: "Event detected: new_subscriber → user_8172" },
-  { time: "00:00:13", type: "think", text: "LLM reasoning: Subscriber event. Applying bonus multiplier 1.5x" },
-  { time: "00:00:14", type: "action", text: "Executing tip: 3.75 USDT → @CryptoMaverick via WDK" },
-  { time: "00:00:15", type: "success", text: "TX confirmed: 0x2b1c...f40a | Budget: 82.75 USDT remaining" },
-  { time: "00:00:18", type: "warn", text: "Budget Guardian: 7.0% consumed. Adjusting rate..." },
-  { time: "00:00:20", type: "system", text: "Rate limiter engaged. Next evaluation in 30s..." },
+  { time: "00:01", type: "sys", text: "Agent initialized. Connecting..." },
+  { time: "00:02", type: "ok", text: "Connected to @CryptoMaverick stream" },
+  { time: "00:05", type: "evt", text: "viewer_count spike: 1,247 → 3,891" },
+  { time: "00:06", type: "llm", text: "High engagement. Checking treasury..." },
+  { time: "00:07", type: "inf", text: "Balance: 142.50 USDT | Budget: 89.00 USDT" },
+  { time: "00:08", type: "llm", text: "score=0.87 sentiment=positive → tip 2.50" },
+  { time: "00:09", type: "act", text: "Tip 2.50 USDT → @CryptoMaverick via WDK" },
+  { time: "00:10", type: "ok", text: "TX 0x7a3f...e91d confirmed" },
+  { time: "00:12", type: "evt", text: "new_subscriber: user_8172" },
+  { time: "00:13", type: "llm", text: "Subscriber event. Bonus 1.5x → tip 3.75" },
+  { time: "00:14", type: "act", text: "Tip 3.75 USDT → @CryptoMaverick via WDK" },
+  { time: "00:15", type: "ok", text: "TX 0x2b1c...f40a confirmed" },
+  { time: "00:18", type: "wrn", text: "Budget: 7% consumed. Rate adjusted." },
+  { time: "00:20", type: "sys", text: "Rate limiter on. Next eval in 30s." },
 ];
 
-function getLogColor(type: string) {
-  switch (type) {
-    case "system":
-      return "text-zinc-500";
-    case "info":
-      return "text-[#00D4FF]";
-    case "event":
-      return "text-[#A855F7]";
-    case "think":
-      return "text-[#F5A623]/80 italic";
-    case "action":
-      return "text-[#00D4FF]";
-    case "success":
-      return "text-emerald-400";
-    case "warn":
-      return "text-[#F5A623]";
-    default:
-      return "text-zinc-400";
-  }
-}
-
-function getLogPrefix(type: string) {
-  switch (type) {
-    case "system":
-      return "[SYS]";
-    case "info":
-      return "[INF]";
-    case "event":
-      return "[EVT]";
-    case "think":
-      return "[LLM]";
-    case "action":
-      return "[ACT]";
-    case "success":
-      return "[OK!]";
-    case "warn":
-      return "[WRN]";
-    default:
-      return "[---]";
-  }
-}
+const LOG_COLORS: Record<string, string> = {
+  sys: "text-zinc-500",
+  inf: "text-zinc-400",
+  ok: "text-emerald-400",
+  evt: "text-violet-400",
+  llm: "text-amber-400/70 italic",
+  act: "text-[#00D4FF]",
+  wrn: "text-amber-400",
+};
 
 function AgentLog() {
-  const [visibleLines, setVisibleLines] = useState(0);
+  const [lines, setLines] = useState(0);
 
   useEffect(() => {
-    let resetTimeout: ReturnType<typeof setTimeout> | null = null;
-
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     const timer = setInterval(() => {
-      setVisibleLines((prev) => {
-        if (prev >= LOG_LINES.length) {
-          resetTimeout = setTimeout(() => setVisibleLines(0), 2000);
+      setLines((p) => {
+        if (p >= LOG_LINES.length) {
           clearInterval(timer);
-          return prev;
+          timeout = setTimeout(() => setLines(0), 3000);
+          return p;
         }
-        return prev + 1;
+        return p + 1;
       });
-    }, 800);
-
+    }, 700);
     return () => {
       clearInterval(timer);
-      if (resetTimeout) clearTimeout(resetTimeout);
+      if (timeout) clearTimeout(timeout);
     };
   }, []);
 
   return (
     <div
-      className="font-[family-name:var(--font-jetbrains)] text-sm leading-relaxed overflow-x-auto"
+      className="font-[family-name:var(--font-jetbrains)] text-[13px] leading-6 overflow-x-auto"
       role="log"
       aria-label="Agent activity log"
     >
-      {LOG_LINES.slice(0, visibleLines).map((line, i) => (
-        <div key={i} className={`log-line flex gap-3 py-1 whitespace-nowrap ${getLogColor(line.type)}`}>
-          <span className="text-zinc-500 shrink-0">{line.time}</span>
-          <span className="shrink-0 font-bold w-[4ch]">{getLogPrefix(line.type)}</span>
-          <span className="whitespace-normal break-words min-w-0">{line.text}</span>
+      {LOG_LINES.slice(0, lines).map((l, i) => (
+        <div key={i} className={`log-line flex gap-3 ${LOG_COLORS[l.type] || "text-zinc-500"}`}>
+          <span className="text-zinc-600 shrink-0 select-none">{l.time}</span>
+          <span className="whitespace-normal break-words min-w-0">{l.text}</span>
         </div>
       ))}
-      {visibleLines < LOG_LINES.length && (
-        <div className="flex gap-3 py-1">
-          <span className="text-zinc-500">{">"}</span>
-          <span className="cursor-blink text-[#00D4FF]" />
+      {lines < LOG_LINES.length && (
+        <div className="flex gap-3">
+          <span className="text-zinc-600 select-none">{">"}</span>
+          <span className="cursor-blink" />
         </div>
       )}
     </div>
   );
 }
 
-/* ─── Mobile Menu Button ─── */
-function MobileMenuButton({
-  isOpen,
-  onClick,
+/* ─── Mobile Menu ─── */
+function MobileMenu({
+  open,
+  onClose,
 }: {
-  isOpen: boolean;
-  onClick: () => void;
+  open: boolean;
+  onClose: () => void;
 }) {
+  if (!open) return null;
   return (
-    <button
-      onClick={onClick}
-      className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5"
-      aria-label={isOpen ? "Close menu" : "Open menu"}
-      aria-expanded={isOpen}
-    >
-      <span
-        className={`block w-5 h-0.5 bg-white transition-all duration-300 ${
-          isOpen ? "rotate-45 translate-y-2" : ""
-        }`}
-      />
-      <span
-        className={`block w-5 h-0.5 bg-white transition-all duration-300 ${
-          isOpen ? "opacity-0" : ""
-        }`}
-      />
-      <span
-        className={`block w-5 h-0.5 bg-white transition-all duration-300 ${
-          isOpen ? "-rotate-45 -translate-y-2" : ""
-        }`}
-      />
-    </button>
+    <div className="md:hidden border-t border-white/5 bg-black/95 backdrop-blur-xl">
+      <div className="flex flex-col px-6 py-6 gap-1 text-[15px]">
+        {["How It Works", "Features", "Agent Log", "Stack"].map((label) => (
+          <a
+            key={label}
+            href={`#${label.toLowerCase().replace(/ /g, "-")}`}
+            className="text-zinc-400 hover:text-white py-2.5 transition-colors"
+            onClick={onClose}
+          >
+            {label}
+          </a>
+        ))}
+      </div>
+    </div>
   );
 }
 
-/* ─── Main Page ─── */
+/* ─── Page ─── */
 export default function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen bg-black">
-      {/* ── Navigation ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00D4FF] to-[#A855F7] flex items-center justify-center">
-              <span className="font-[family-name:var(--font-syne)] font-bold text-black text-sm">
-                R
-              </span>
-            </div>
-            <span className="font-[family-name:var(--font-syne)] font-bold text-lg tracking-tight">
+    <div className="flex flex-col min-h-screen">
+      {/* ── Nav ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.04] bg-[#050505]/80 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2.5">
+            <span className="font-[family-name:var(--font-syne)] font-bold text-[15px] tracking-[-0.02em]">
               Rumble Pulse
             </span>
+          </a>
+          <div className="hidden md:flex items-center gap-8 text-[13px] text-zinc-500">
+            <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+            <a href="#features" className="hover:text-white transition-colors">Features</a>
+            <a href="#agent-log" className="hover:text-white transition-colors">Agent Log</a>
+            <a href="#stack" className="hover:text-white transition-colors">Stack</a>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-zinc-400">
-            <a href="#how-it-works" className="hover:text-white transition-colors">
-              How It Works
-            </a>
-            <a href="#features" className="hover:text-white transition-colors">
-              Features
-            </a>
-            <a href="#agent-log" className="hover:text-white transition-colors">
-              Agent Log
-            </a>
-            <a href="#tech-stack" className="hover:text-white transition-colors">
-              Stack
-            </a>
-          </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <a
               href="#"
-              className="hidden sm:inline-flex px-4 py-2 text-sm font-medium rounded-lg bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 hover:bg-[#00D4FF]/20 transition-all"
+              className="hidden sm:inline-flex text-[13px] font-medium px-4 py-1.5 rounded-md bg-white text-black hover:bg-zinc-200 transition-colors"
             >
               Launch Agent
             </a>
-            <MobileMenuButton
-              isOpen={mobileMenuOpen}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            />
+            <button
+              className="md:hidden w-8 h-8 flex flex-col justify-center items-center gap-[5px]"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+            >
+              <span className={`block w-4 h-[1.5px] bg-zinc-400 transition-all duration-200 ${menuOpen ? "rotate-45 translate-y-[6.5px]" : ""}`} />
+              <span className={`block w-4 h-[1.5px] bg-zinc-400 transition-all duration-200 ${menuOpen ? "opacity-0" : ""}`} />
+              <span className={`block w-4 h-[1.5px] bg-zinc-400 transition-all duration-200 ${menuOpen ? "-rotate-45 -translate-y-[6.5px]" : ""}`} />
+            </button>
           </div>
         </div>
-
-        {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/5 bg-black/95 backdrop-blur-xl">
-            <div className="flex flex-col px-6 py-4 gap-4 text-sm text-zinc-400">
-              <a
-                href="#how-it-works"
-                className="hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                How It Works
-              </a>
-              <a
-                href="#features"
-                className="hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </a>
-              <a
-                href="#agent-log"
-                className="hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Agent Log
-              </a>
-              <a
-                href="#tech-stack"
-                className="hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Stack
-              </a>
-              <a
-                href="#"
-                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 hover:bg-[#00D4FF]/20 transition-all sm:hidden"
-              >
-                Launch Agent
-              </a>
-            </div>
-          </div>
-        )}
+        <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       </nav>
 
       <main>
         {/* ── Hero ── */}
-        <section className="hero-bg relative min-h-screen flex items-center justify-center pt-16">
+        <section className="relative min-h-screen flex items-center overflow-hidden">
           <HeroVideo />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black" />
-          <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-            <div className="animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/5 text-[#00D4FF] text-sm font-medium mb-8">
-                <span className="w-2 h-2 rounded-full bg-[#00D4FF] animate-pulse" />
-                Powered by Tether WDK
+          {/* Subtle top glow — only cyan, very faint */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,212,255,0.07) 0%, transparent 60%)",
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050505]" />
+
+          <div className="relative z-10 max-w-6xl mx-auto px-6 pt-32 pb-20 w-full">
+            <div className="max-w-3xl">
+              <p className="animate-in text-[13px] font-medium text-[#00D4FF] tracking-wide uppercase mb-6">
+                Autonomous Tipping Agent
+              </p>
+
+              <h1 className="animate-in delay-1 font-[family-name:var(--font-syne)] text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-[-0.04em] leading-[0.95]">
+                Let your agent
+                <br />
+                <span className="text-[#00D4FF]">tip for you.</span>
+              </h1>
+
+              <p className="animate-in delay-2 mt-8 text-lg text-zinc-500 max-w-lg leading-relaxed">
+                Event-driven tipping infrastructure for Rumble creators.
+                Your agent watches streams, reasons about engagement, and sends
+                USDT tips onchain via Tether WDK.
+              </p>
+
+              <div className="animate-in delay-3 mt-10 flex flex-wrap gap-3">
+                <a
+                  href="#"
+                  className="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg bg-white text-black hover:bg-zinc-200 transition-colors"
+                >
+                  Launch Agent
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="ml-2" aria-hidden="true">
+                    <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </a>
+                <a
+                  href="#"
+                  className="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white transition-all"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="mr-2" aria-hidden="true">
+                    <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" clipRule="evenodd" />
+                  </svg>
+                  GitHub
+                </a>
               </div>
             </div>
 
-            <h1 className="animate-fade-in-up animation-delay-200 font-[family-name:var(--font-syne)] text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.05]">
-              Let Your Agent
-              <br />
-              <span className="bg-gradient-to-r from-[#00D4FF] via-[#A855F7] to-[#F5A623] bg-clip-text text-transparent">
-                Tip For You
-              </span>
-            </h1>
-
-            <p className="animate-fade-in-up animation-delay-400 mt-8 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Autonomous, event-driven tipping infrastructure for Rumble creators
-              — powered by Tether WDK
-            </p>
-
-            <div className="animate-fade-in-up animation-delay-600 mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="#"
-                className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-semibold rounded-xl bg-[#00D4FF] text-black hover:shadow-[0_0_40px_rgba(0,212,255,0.4)] transition-all duration-300"
-              >
-                Launch Agent
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  className="ml-2 group-hover:translate-x-1 transition-transform"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M4 10H16M16 10L11 5M16 10L11 15"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white transition-all duration-300"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="mr-2"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C17.138 18.163 20 14.418 20 10c0-5.523-4.477-10-10-10z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                View on GitHub
-              </a>
-            </div>
-
-            {/* Stats bar */}
-            <div className="animate-fade-in-up animation-delay-800 mt-20 grid grid-cols-3 gap-4 sm:gap-8 max-w-xl mx-auto">
-              <div className="text-center">
-                <div className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl font-bold text-[#00D4FF] glow-cyan">
-                  24/7
-                </div>
-                <div className="text-sm text-zinc-500 mt-1">Autonomous</div>
+            {/* Inline stats — simple, no glow */}
+            <div className="animate-in delay-4 mt-20 flex gap-12 text-sm">
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">24/7</span>
+                <span className="text-zinc-600 ml-2">autonomous</span>
               </div>
-              <div className="text-center">
-                <div className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl font-bold text-[#F5A623] glow-amber">
-                  &lt;2s
-                </div>
-                <div className="text-sm text-zinc-500 mt-1">Tip Latency</div>
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">&lt;2s</span>
+                <span className="text-zinc-600 ml-2">tip latency</span>
               </div>
-              <div className="text-center">
-                <div className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl font-bold text-[#A855F7] glow-purple">
-                  100%
-                </div>
-                <div className="text-sm text-zinc-500 mt-1">Onchain</div>
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">100%</span>
+                <span className="text-zinc-600 ml-2">onchain</span>
               </div>
             </div>
           </div>
-
-          {/* Bottom gradient fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent" />
         </section>
 
-        {/* ── How It Works ── */}
-        <section id="how-it-works" className="py-32 px-6">
+        {/* ── How It Works — Horizontal, no cards ── */}
+        <section id="how-it-works" className="py-24 px-6 border-t border-white/[0.04]">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-20">
-              <span className="text-[#00D4FF] text-sm font-medium tracking-widest uppercase">
-                How It Works
-              </span>
-              <h2 className="font-[family-name:var(--font-syne)] text-4xl sm:text-5xl font-bold mt-4">
-                Three Steps to{" "}
-                <span className="text-[#00D4FF]">Autonomous</span> Tipping
-              </h2>
-            </div>
+            <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-12">
+              How It Works
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] gap-4 md:gap-6 items-center">
-              {/* Step 1 */}
-              <div className="glass-card p-8 text-center relative">
-                <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-[#00D4FF]/10 border border-[#00D4FF]/20">
-                  <RulesIcon />
-                </div>
-                <div className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs tracking-widest mb-3">
-                  STEP 01
-                </div>
-                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mb-3">
-                  Set Your Rules
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">01</span>
+                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
+                  Set your rules
                 </h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">
-                  Define tip triggers, budget limits, and creator allowlists. Your
-                  agent follows your policy — always.
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  Define tip triggers, budget limits, and creator allowlists.
+                  Your agent follows your policy — always.
                 </p>
               </div>
-
-              {/* Arrow 1→2 */}
-              <div className="hidden md:flex items-center justify-center px-2">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M5 12H19M19 12L13 6M19 12L13 18"
-                    stroke="url(#arrow-grad-1)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <defs>
-                    <linearGradient id="arrow-grad-1" x1="5" y1="12" x2="19" y2="12">
-                      <stop stopColor="#00D4FF" />
-                      <stop offset="1" stopColor="#A855F7" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-
-              {/* Step 2 */}
-              <div className="glass-card p-8 text-center relative">
-                <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-[#A855F7]/10 border border-[#A855F7]/20">
-                  <WatchIcon />
-                </div>
-                <div className="font-[family-name:var(--font-jetbrains)] text-[#A855F7] text-xs tracking-widest mb-3">
-                  STEP 02
-                </div>
-                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mb-3">
-                  Agent Watches
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">02</span>
+                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
+                  Agent watches
                 </h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">
+                <p className="text-zinc-500 text-sm leading-relaxed">
                   The AI agent monitors Rumble streams in real-time — tracking
                   engagement, sentiment, and events.
                 </p>
               </div>
-
-              {/* Arrow 2→3 */}
-              <div className="hidden md:flex items-center justify-center px-2">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M5 12H19M19 12L13 6M19 12L13 18"
-                    stroke="url(#arrow-grad-2)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <defs>
-                    <linearGradient id="arrow-grad-2" x1="5" y1="12" x2="19" y2="12">
-                      <stop stopColor="#A855F7" />
-                      <stop offset="1" stopColor="#F5A623" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-
-              {/* Step 3 */}
-              <div className="glass-card p-8 text-center relative">
-                <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-[#F5A623]/10 border border-[#F5A623]/20">
-                  <TipIcon />
-                </div>
-                <div className="font-[family-name:var(--font-jetbrains)] text-[#F5A623] text-xs tracking-widest mb-3">
-                  STEP 03
-                </div>
-                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mb-3">
-                  Tips Execute Onchain
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">03</span>
+                <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mt-3 mb-3 tracking-[-0.02em]">
+                  Tips execute onchain
                 </h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">
-                  USDT tips are sent via Tether WDK — fast, transparent, and fully
-                  onchain with no middleman.
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  USDT tips are sent via Tether WDK — fast, transparent,
+                  and fully onchain with no middleman.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── Features ── */}
-        <section id="features" className="py-32 px-6 relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00D4FF]/[0.02] to-transparent pointer-events-none" />
-          <div className="max-w-6xl mx-auto relative">
-            <div className="text-center mb-20">
-              <span className="text-[#A855F7] text-sm font-medium tracking-widest uppercase">
-                Features
-              </span>
-              <h2 className="font-[family-name:var(--font-syne)] text-4xl sm:text-5xl font-bold mt-4">
-                Built for{" "}
-                <span className="text-[#A855F7]">Intelligent</span> Tipping
-              </h2>
-            </div>
+        {/* ── Bento Grid: Features + Agent Log ── */}
+        <section id="features" className="py-24 px-6 border-t border-white/[0.04]">
+          <div className="max-w-6xl mx-auto">
+            <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-12">
+              Features
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Smart Treasury Split */}
-              <div className="gradient-border-card p-8 relative z-10 bg-black">
-                <div className="relative z-10">
-                  <div className="w-12 h-12 mb-6 rounded-xl bg-[#00D4FF]/10 flex items-center justify-center">
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#00D4FF"
-                      strokeWidth="2"
-                      aria-hidden="true"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6V12L16 14" strokeLinecap="round" />
-                      <path d="M8 2L12 6L16 2" strokeLinecap="round" />
-                    </svg>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Agent Log — large card, spans full width on top */}
+              <div id="agent-log" className="md:col-span-2 card p-0 overflow-hidden">
+                {/* Terminal chrome */}
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
+                  <div className="flex gap-1.5" aria-hidden="true">
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
                   </div>
-                  <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mb-3">
-                    Smart Treasury Split
-                  </h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                    Automatically partition funds into tip pool, reserve, and gas
-                    buffer. Dynamic rebalancing based on stream performance.
-                  </p>
-                  <div className="flex gap-3">
-                    <span className="px-3 py-1 text-xs rounded-full bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20">
-                      Auto-Split
-                    </span>
-                    <span className="px-3 py-1 text-xs rounded-full bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20">
-                      Rebalance
+                  <span className="ml-3 font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                    rumble-pulse-agent
+                  </span>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                    <span className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                      live
                     </span>
                   </div>
                 </div>
+                <div className="p-5 min-h-[320px] max-h-[380px] overflow-y-auto">
+                  <AgentLog />
+                </div>
+              </div>
+
+              {/* Smart Treasury */}
+              <div className="card p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="font-[family-name:var(--font-syne)] text-base font-bold tracking-[-0.01em]">
+                    Smart Treasury Split
+                  </h3>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-600 shrink-0" aria-hidden="true">
+                    <circle cx="10" cy="10" r="8" />
+                    <path d="M10 6V10L13 11.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  Auto-partition into tip pool, reserve, and gas buffer.
+                  Dynamic rebalancing based on stream performance.
+                </p>
               </div>
 
               {/* LLM Reasoning */}
-              <div className="gradient-border-card p-8 relative z-10 bg-black">
-                <div className="relative z-10">
-                  <div className="w-12 h-12 mb-6 rounded-xl bg-[#A855F7]/10 flex items-center justify-center">
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#A855F7"
-                      strokeWidth="2"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 2L2 7L12 12L22 7L12 2Z" />
-                      <path d="M2 17L12 22L22 17" />
-                      <path d="M2 12L12 17L22 12" />
-                    </svg>
-                  </div>
-                  <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mb-3">
+              <div className="card p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="font-[family-name:var(--font-syne)] text-base font-bold tracking-[-0.01em]">
                     LLM Reasoning
                   </h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                    Every tip decision passes through an LLM reasoning layer —
-                    evaluating engagement quality, sentiment, and creator context.
-                  </p>
-                  <div className="flex gap-3">
-                    <span className="px-3 py-1 text-xs rounded-full bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20">
-                      AI-Driven
-                    </span>
-                    <span className="px-3 py-1 text-xs rounded-full bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20">
-                      Context-Aware
-                    </span>
-                  </div>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-600 shrink-0" aria-hidden="true">
+                    <path d="M10 2L2 6L10 10L18 6L10 2Z" />
+                    <path d="M2 14L10 18L18 14" />
+                    <path d="M2 10L10 14L18 10" />
+                  </svg>
                 </div>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  Every tip passes through an LLM reasoning layer — evaluating
+                  engagement quality, sentiment, and context.
+                </p>
               </div>
 
-              {/* Budget Guardian */}
-              <div className="gradient-border-card p-8 relative z-10 bg-black">
-                <div className="relative z-10">
-                  <div className="w-12 h-12 mb-6 rounded-xl bg-[#F5A623]/10 flex items-center justify-center">
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#F5A623"
-                      strokeWidth="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z"
-                        strokeLinejoin="round"
-                      />
-                      <path d="M9 12L11 14L15 10" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <h3 className="font-[family-name:var(--font-syne)] text-xl font-bold mb-3">
+              {/* Budget Guardian — full width */}
+              <div className="md:col-span-2 card p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                <div className="flex-1">
+                  <h3 className="font-[family-name:var(--font-syne)] text-base font-bold tracking-[-0.01em] mb-2">
                     Budget Guardian
                   </h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+                  <p className="text-zinc-500 text-sm leading-relaxed">
                     Hard caps, rate limiting, and anomaly detection ensure your
-                    treasury is never drained. Configurable per-session and global
-                    limits.
+                    treasury is never drained. Configurable per-session and global limits.
                   </p>
-                  <div className="flex gap-3">
-                    <span className="px-3 py-1 text-xs rounded-full bg-[#F5A623]/10 text-[#F5A623] border border-[#F5A623]/20">
-                      Rate Limit
-                    </span>
-                    <span className="px-3 py-1 text-xs rounded-full bg-[#F5A623]/10 text-[#F5A623] border border-[#F5A623]/20">
-                      Hard Cap
-                    </span>
+                </div>
+                <div className="flex gap-6 font-[family-name:var(--font-jetbrains)] text-xs text-zinc-500 shrink-0">
+                  <div className="text-center">
+                    <div className="text-white text-lg font-medium">50</div>
+                    <div>USDT/session</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-white text-lg font-medium">5</div>
+                    <div>USDT/tip max</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-white text-lg font-medium">30s</div>
+                    <div>rate limit</div>
                   </div>
                 </div>
               </div>
@@ -800,151 +417,40 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Live Agent Log ── */}
-        <section id="agent-log" className="py-32 px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="text-[#F5A623] text-sm font-medium tracking-widest uppercase">
-                Live Preview
-              </span>
-              <h2 className="font-[family-name:var(--font-syne)] text-4xl sm:text-5xl font-bold mt-4">
-                Agent <span className="text-[#F5A623]">Thought</span> Process
-              </h2>
-              <p className="text-zinc-400 mt-4 max-w-lg mx-auto">
-                Watch the autonomous agent reason, evaluate, and execute tips in
-                real-time.
-              </p>
-            </div>
-
-            <div className="glass-card overflow-hidden">
-              {/* Terminal Header */}
-              <div className="flex items-center gap-2 px-6 py-4 border-b border-white/5 bg-white/[0.02]">
-                <div className="flex gap-2" aria-hidden="true">
-                  <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
-                  <div className="w-3 h-3 rounded-full bg-[#FEBC2E]" />
-                  <div className="w-3 h-3 rounded-full bg-[#28C840]" />
+        {/* ── Stack — inline badges ── */}
+        <section id="stack" className="py-24 px-6 border-t border-white/[0.04]">
+          <div className="max-w-6xl mx-auto">
+            <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-8">
+              Built with
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { label: "WDK by Tether", sub: "Wallet SDK" },
+                { label: "OpenClaw", sub: "Agent Framework" },
+                { label: "USDT", sub: "Stablecoin" },
+                { label: "TypeScript", sub: "Language" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] transition-colors"
+                >
+                  <span className="text-sm font-medium text-white">{item.label}</span>
+                  <span className="text-xs text-zinc-600">{item.sub}</span>
                 </div>
-                <span className="ml-4 font-[family-name:var(--font-jetbrains)] text-xs text-zinc-500">
-                  rumble-pulse-agent — session_0x7f3a
-                </span>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
-                  <span className="font-[family-name:var(--font-jetbrains)] text-xs text-emerald-400">
-                    LIVE
-                  </span>
-                </div>
-              </div>
-
-              {/* Terminal Body */}
-              <div className="p-6 min-h-[400px] max-h-[500px] overflow-y-auto">
-                <AgentLog />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Tech Stack ── */}
-        <section id="tech-stack" className="py-32 px-6 relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#A855F7]/[0.02] to-transparent pointer-events-none" />
-          <div className="max-w-5xl mx-auto relative">
-            <div className="text-center mb-16">
-              <span className="text-[#00D4FF] text-sm font-medium tracking-widest uppercase">
-                Tech Stack
-              </span>
-              <h2 className="font-[family-name:var(--font-syne)] text-4xl sm:text-5xl font-bold mt-4">
-                Built With the <span className="text-[#00D4FF]">Best</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {/* WDK by Tether */}
-              <div className="glass-card p-8 flex flex-col items-center gap-4 text-center group hover:border-[#00D4FF]/30">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D4FF]/20 to-[#00D4FF]/5 flex items-center justify-center border border-[#00D4FF]/20 group-hover:shadow-[0_0_20px_rgba(0,212,255,0.2)] transition-all">
-                  <span className="font-[family-name:var(--font-syne)] font-bold text-[#00D4FF] text-lg">
-                    W
-                  </span>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-syne)] font-bold text-sm">
-                    WDK by Tether
-                  </div>
-                  <div className="text-zinc-500 text-xs mt-1">Wallet Development Kit</div>
-                </div>
-              </div>
-
-              {/* OpenClaw */}
-              <div className="glass-card p-8 flex flex-col items-center gap-4 text-center group hover:border-[#A855F7]/30">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#A855F7]/20 to-[#A855F7]/5 flex items-center justify-center border border-[#A855F7]/20 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] transition-all">
-                  <span className="font-[family-name:var(--font-syne)] font-bold text-[#A855F7] text-lg">
-                    OC
-                  </span>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-syne)] font-bold text-sm">
-                    OpenClaw
-                  </div>
-                  <div className="text-zinc-500 text-xs mt-1">Agent Framework</div>
-                </div>
-              </div>
-
-              {/* USDT */}
-              <div className="glass-card p-8 flex flex-col items-center gap-4 text-center group hover:border-[#F5A623]/30">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F5A623]/20 to-[#F5A623]/5 flex items-center justify-center border border-[#F5A623]/20 group-hover:shadow-[0_0_20px_rgba(245,166,35,0.2)] transition-all">
-                  <span className="font-[family-name:var(--font-syne)] font-bold text-[#F5A623] text-lg">
-                    ₮
-                  </span>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-syne)] font-bold text-sm">USDT</div>
-                  <div className="text-zinc-500 text-xs mt-1">Stablecoin Payments</div>
-                </div>
-              </div>
-
-              {/* TypeScript */}
-              <div className="glass-card p-8 flex flex-col items-center gap-4 text-center group hover:border-[#3178C6]/30">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#3178C6]/20 to-[#3178C6]/5 flex items-center justify-center border border-[#3178C6]/20 group-hover:shadow-[0_0_20px_rgba(49,120,198,0.2)] transition-all">
-                  <span className="font-[family-name:var(--font-syne)] font-bold text-[#3178C6] text-lg">
-                    TS
-                  </span>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-syne)] font-bold text-sm">
-                    TypeScript
-                  </div>
-                  <div className="text-zinc-500 text-xs mt-1">Type-Safe Codebase</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-white/5 py-12 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#00D4FF] to-[#A855F7] flex items-center justify-center" aria-hidden="true">
-              <span className="font-[family-name:var(--font-syne)] font-bold text-black text-xs">
-                R
-              </span>
-            </div>
-            <span className="font-[family-name:var(--font-syne)] font-semibold text-sm">
-              Rumble Pulse Agent
-            </span>
-          </div>
-          <p className="text-zinc-500 text-sm">
-            Autonomous tipping infrastructure for the creator economy.
-          </p>
-          <div className="flex items-center gap-6 text-zinc-500 text-sm">
-            <a href="#" className="hover:text-white transition-colors">
-              GitHub
-            </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Docs
-            </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Twitter
-            </a>
+      {/* ── Footer — single line ── */}
+      <footer className="border-t border-white/[0.04] py-6 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-zinc-600">
+          <span>Rumble Pulse Agent</span>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-white transition-colors">GitHub</a>
+            <a href="#" className="hover:text-white transition-colors">Docs</a>
+            <a href="#" className="hover:text-white transition-colors">Twitter</a>
           </div>
         </div>
       </footer>
