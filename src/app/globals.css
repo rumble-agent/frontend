@@ -31,6 +31,14 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
+/* ── Focus Visible ── */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ── Glassmorphism Card ── */
 .glass-card {
   background: var(--glass-bg);
@@ -125,11 +133,6 @@ body {
   color: var(--cyan);
 }
 
-@keyframes typewriter {
-  from { width: 0; }
-  to { width: 100%; }
-}
-
 /* ── Fade In Up ── */
 @keyframes fade-in-up {
   from {
@@ -153,16 +156,6 @@ body {
 .animation-delay-800 { animation-delay: 0.8s; }
 .animation-delay-1000 { animation-delay: 1.0s; }
 
-/* ── Pulse Glow ── */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.6), 0 0 60px rgba(0, 212, 255, 0.2); }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2.5s ease-in-out infinite;
-}
-
 /* ── Hero Background ── */
 .hero-bg {
   position: relative;
@@ -178,27 +171,6 @@ body {
     radial-gradient(ellipse 60% 40% at 80% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
     radial-gradient(ellipse 50% 30% at 20% 30%, rgba(245, 166, 35, 0.06) 0%, transparent 50%);
   pointer-events: none;
-}
-
-/* ── Step Connector Line ── */
-.step-connector {
-  position: relative;
-}
-
-.step-connector::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -2rem;
-  width: 4rem;
-  height: 2px;
-  background: linear-gradient(90deg, var(--cyan), transparent);
-}
-
-@media (max-width: 768px) {
-  .step-connector::after {
-    display: none;
-  }
 }
 
 /* ── Scrollbar ── */
@@ -217,6 +189,12 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 212, 255, 0.4);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.2) transparent;
 }
 
 /* ── Terminal Log Lines ── */
