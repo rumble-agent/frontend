@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ─── Icon Components ─── */
 function RulesIcon() {
@@ -151,6 +151,54 @@ function TipIcon() {
   );
 }
 
+/* ─── Hero Video Background ─── */
+const HLS_SRC =
+  "https://stream.mux.com/hUT6X11m1Vkw1QMxPOLgI761x2cfpi9bHFbi5cNg4014.m3u8";
+
+function HeroVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari native HLS
+      video.src = HLS_SRC;
+      video.play();
+      return;
+    }
+
+    let hls: import("hls.js").default | null = null;
+
+    import("hls.js").then((mod) => {
+      const Hls = mod.default;
+      if (!Hls.isSupported()) return;
+      hls = new Hls({ autoStartLoad: true });
+      hls.loadSource(HLS_SRC);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play();
+      });
+    });
+
+    return () => {
+      hls?.destroy();
+    };
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute inset-0 w-full h-full object-cover opacity-30"
+    />
+  );
+}
+
 /* ─── Agent Log Component ─── */
 const LOG_LINES = [
   { time: "00:00:01", type: "system", text: "Agent initialized. Loading config..." },
@@ -289,15 +337,7 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <section className="hero-bg relative min-h-screen flex items-center justify-center pt-16">
-        {/* Replace this div's background with your iridescent wave PNG */}
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: "url('/hero-bg.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
+        <HeroVideo />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black" />
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
           <div className="animate-fade-in-up">
