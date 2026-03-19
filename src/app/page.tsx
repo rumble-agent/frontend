@@ -165,7 +165,7 @@ function MiniAgentPreview() {
       {/* Log lines */}
       <div className="p-4 font-[family-name:var(--font-jetbrains)] text-[11px] leading-5 min-h-[180px]">
         {PREVIEW_LINES.slice(0, lines).map((l, i) => (
-          <div key={i} className={`log-line flex gap-2 ${PREVIEW_COLORS[l.type]}`}>
+          <div key={i} className={`log-line flex gap-2 ${PREVIEW_COLORS[l.type] || "text-zinc-500"}`}>
             <span className="text-zinc-700 shrink-0 select-none">›</span>
             <span>{l.text}</span>
           </div>
@@ -219,8 +219,10 @@ const LOG_COLORS: Record<string, string> = {
 
 function AgentLog() {
   const [lines, setLines] = useState(0);
+  const [cycle, setCycle] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const startAnimation = useCallback(() => {
     if (startedRef.current) return;
@@ -233,6 +235,7 @@ function AgentLog() {
           clearInterval(timer);
           timeout = setTimeout(() => {
             setLines(0);
+            setCycle((c) => c + 1);
             startedRef.current = false;
           }, 3000);
           return p;
@@ -241,7 +244,7 @@ function AgentLog() {
       });
     }, 700);
 
-    return () => {
+    cleanupRef.current = () => {
       clearInterval(timer);
       if (timeout) clearTimeout(timeout);
     };
@@ -262,7 +265,10 @@ function AgentLog() {
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      cleanupRef.current?.();
+    };
   }, [startAnimation]);
 
   return (
@@ -273,7 +279,7 @@ function AgentLog() {
       aria-label="Agent activity log"
     >
       {LOG_LINES.slice(0, lines).map((l, i) => (
-        <div key={i} className={`log-line flex gap-3 ${LOG_COLORS[l.type] || "text-zinc-500"}`}>
+        <div key={`${cycle}-${i}`} className={`log-line flex gap-3 ${LOG_COLORS[l.type] || "text-zinc-500"}`}>
           <span className="text-zinc-600 shrink-0 select-none">{l.time}</span>
           <span className="whitespace-normal break-words min-w-0">{l.text}</span>
         </div>
@@ -444,7 +450,7 @@ export default function Home() {
                 </div>
 
                 {/* Inline stats */}
-                <div className="animate-in delay-4 mt-12 flex gap-10 text-sm">
+                <div className="animate-in delay-4 mt-12 flex flex-wrap gap-x-10 gap-y-3 text-sm">
                   <div>
                     <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">24/7</span>
                     <span className="text-zinc-600 ml-2">autonomous</span>
@@ -516,7 +522,7 @@ export default function Home() {
                 },
               ].map((step, i) => (
                 <Reveal key={step.num} delay={i + 1}>
-                  <div className={`step-connector ${i > 0 ? "md:pl-12" : ""} ${i < 2 ? "md:pr-12 md:border-r md:border-white/[0.04]" : ""}`}>
+                  <div className={`${i > 0 ? "step-connector md:pl-12" : ""} ${i < 2 ? "md:pr-12 md:border-r md:border-white/[0.04]" : ""}`}>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-lg border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
                         {step.icon}
