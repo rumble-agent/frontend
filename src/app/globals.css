@@ -14,7 +14,7 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --font-sans: var(--font-inter);
-  --font-heading: var(--font-syne);
+  --font-heading: var(--font-heading);
   --font-mono: var(--font-jetbrains);
 }
 
@@ -70,7 +70,7 @@ button:focus-visible {
   color: var(--accent);
 }
 
-/* ── Fade In Up ── */
+/* ── Fade In Up (hero only) ── */
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -93,6 +93,24 @@ button:focus-visible {
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
 
+/* ── Scroll Reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.08s; }
+.reveal-delay-2 { transition-delay: 0.16s; }
+.reveal-delay-3 { transition-delay: 0.24s; }
+.reveal-delay-4 { transition-delay: 0.32s; }
+
 /* ── Terminal Log Lines ── */
 @keyframes slide-in {
   from {
@@ -107,6 +125,66 @@ button:focus-visible {
 
 .log-line {
   animation: slide-in 0.25s ease forwards;
+}
+
+/* ── Marquee ── */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee 30s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ── CTA Glow ── */
+.cta-primary {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.cta-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.15), 0 0 40px rgba(255, 255, 255, 0.05);
+}
+
+.cta-primary:active {
+  transform: translateY(0);
+}
+
+/* ── How It Works Step Connector ── */
+.step-connector {
+  position: relative;
+}
+
+.step-connector::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: -32px;
+  right: -32px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.15), transparent);
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .step-connector::before {
+    display: block;
+  }
+}
+
+/* ── Accent Left Border Card ── */
+.card-accent {
+  border-left: 2px solid rgba(0, 212, 255, 0.3);
+}
+
+.card-accent:hover {
+  border-left-color: rgba(0, 212, 255, 0.6);
 }
 
 /* ── Scrollbar ── */
