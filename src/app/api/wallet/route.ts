@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWalletState, getBudget, updateBudgetConfig, resetBudget } from "@/lib/wdk";
+import { z } from "zod";
+
+const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
+
+function checkAuth(req: NextRequest): boolean {
+  if (!ADMIN_TOKEN) return true; // no token configured = open (dev mode)
+  const header = req.headers.get("x-admin-token") ?? "";
+  return header === ADMIN_TOKEN;
+}
+
+const SplitRulesSchema = z.object({
+  creator: z.number().min(0).max(1),
+  editor: z.number().min(0).max(1),
+  charity: z.number().min(0).max(1),
+}).refine((r) => Math.abs(r.creator + r.editor + r.charity - 1) < 0.001, {
+  message: "Split rules must sum to 1.0",
+});
+
+const BudgetConfigSchema = z.object({
+  max_per_session: z.number().positive().optional(),
+  max_per_tip: z.number().positive().optional(),
+  rate_limit_seconds: z.number().nonnegative().optional(),
+  split_rules: SplitRulesSchema.optional(),
+});
 
 /* GET /api/wallet — Get wallet state + budget */
 export async function GET() {
@@ -19,15 +43,29 @@ export async function GET() {
 /* POST /api/wallet — Update budget config or reset budget */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    if (!checkAuth(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (body.action === "reset_budget") {
+    const raw = await req.json().catch(() => null);
+    if (!raw) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    if (raw.action === "reset_budget") {
       resetBudget();
       return NextResponse.json({ message: "Budget reset", budget: getBudget() });
     }
 
-    if (body.budget_config) {
-      const updated = updateBudgetConfig(body.budget_config);
+    if (raw.budget_config) {
+      const parsed = BudgetConfigSchema.safeParse(raw.budget_config);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: "Invalid budget config", details: parsed.error.flatten().fieldErrors },
+          { status: 400 }
+        );
+      }
+      const updated = updateBudgetConfig(parsed.data);
       return NextResponse.json({ message: "Budget updated", config: updated, budget: getBudget() });
     }
 

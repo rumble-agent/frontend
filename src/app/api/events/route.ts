@@ -3,6 +3,13 @@ import { subscribe, getLogHistory } from "@/lib/agent";
 /* GET /api/events — SSE stream of agent log entries */
 export async function GET() {
   const encoder = new TextEncoder();
+  let unsubscribe: (() => void) | null = null;
+  let keepalive: ReturnType<typeof setInterval> | null = null;
+
+  function cleanup() {
+    if (keepalive) { clearInterval(keepalive); keepalive = null; }
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  }
 
   const stream = new ReadableStream({
     start(controller) {
@@ -15,25 +22,27 @@ export async function GET() {
       }
 
       // Subscribe to new entries
-      const unsubscribe = subscribe((entry) => {
+      unsubscribe = subscribe((entry) => {
         try {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(entry)}\n\n`)
           );
         } catch {
-          unsubscribe();
+          cleanup();
         }
       });
 
       // Send keepalive every 15s
-      const keepalive = setInterval(() => {
+      keepalive = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(": keepalive\n\n"));
         } catch {
-          clearInterval(keepalive);
-          unsubscribe();
+          cleanup();
         }
       }, 15000);
+    },
+    cancel() {
+      cleanup();
     },
   });
 

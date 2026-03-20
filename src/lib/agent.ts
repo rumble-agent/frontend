@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import type { StreamEvent, AgentDecision, AgentLogEntry, DecisionRecord, AgentStats } from "./types";
-import { canTip, calculateSplit, getBudget } from "./wdk";
+import { canTip, calculateSplit, getBudget, CHAIN } from "./wdk";
 
 /* ─── Log Store (in-memory, streamed via SSE) ─── */
 type LogListener = (entry: AgentLogEntry) => void;
@@ -45,7 +45,7 @@ function recordDecision(decision: AgentDecision, transactions: { tx_hash: string
   const record: DecisionRecord = {
     id: `dec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     decision,
-    transactions: transactions.map((tx) => ({ ...tx, success: true, chain: process.env.WDK_CHAIN ?? "ethereum-sepolia", timestamp: Date.now() })),
+    transactions: transactions.map((tx) => ({ ...tx, success: true, chain: CHAIN, timestamp: Date.now() })),
     usedLLM,
     timestamp: Date.now(),
   };
@@ -158,6 +158,24 @@ function calculateTipAmount(score: number): number {
   return Math.max(0.5, Math.min(amount, maxTip));
 }
 
+/* ─── LLM Rate Limiter ─── */
+let lastLLMCall = 0;
+const LLM_MIN_INTERVAL_MS = 2000; // minimum 2s between LLM calls
+
+function canCallLLM(): boolean {
+  const now = Date.now();
+  if (now - lastLLMCall < LLM_MIN_INTERVAL_MS) return false;
+  return true;
+}
+
+function hasValidApiKey(): boolean {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return false;
+  if (key.length < 20) return false;
+  if (key.includes("your-") || key === "sk-ant-xxx") return false;
+  return true;
+}
+
 /* ─── Agent Decision Engine ─── */
 export async function evaluateEvent(
   event: StreamEvent,
@@ -177,9 +195,10 @@ export async function evaluateEvent(
   let usedLLM = false;
 
   // Try LLM first, fall back to rules
-  if (process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY.includes("your-")) {
+  if (hasValidApiKey() && canCallLLM()) {
     try {
       emit("llm", "Reasoning with Claude...");
+      lastLLMCall = Date.now();
       decision = await evaluateWithLLM(event, budgetCtx);
       usedLLM = true;
       emit("llm", `Claude: score=${decision.score} tip=${decision.should_tip ? `${decision.amount} USDT` : "skip"}`);

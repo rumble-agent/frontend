@@ -1,28 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateEvent, getNextMockEvent } from "@/lib/agent";
 import { sendTip } from "@/lib/wdk";
-import type { StreamEvent } from "@/lib/types";
+import { z } from "zod";
+
+/* ─── Request Validation ─── */
+const EventSchema = z.object({
+  type: z.enum(["viewer_spike", "new_subscriber", "donation", "milestone", "sentiment_shift"]),
+  timestamp: z.number(),
+  data: z.object({
+    viewer_count: z.number().optional(),
+    previous_viewer_count: z.number().optional(),
+    subscriber_id: z.string().optional(),
+    milestone_type: z.string().optional(),
+    sentiment: z.enum(["positive", "neutral", "negative"]).optional(),
+    sentiment_score: z.number().min(0).max(1).optional(),
+  }),
+});
+
+const PostBodySchema = z.object({
+  event: EventSchema.optional(),
+  creator_address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address").optional(),
+  execute: z.boolean().optional(),
+});
+
+const DEMO_CREATOR = process.env.DEMO_CREATOR_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
 
 /* POST /api/agent — Evaluate an event and optionally execute tip */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const raw = await req.json().catch(() => null);
+    if (!raw) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
-    // Use provided event or generate a mock one (for demo)
-    const event: StreamEvent = body.event ?? getNextMockEvent();
-    const creatorAddress: string = body.creator_address ?? "0x_default_creator";
+    const parsed = PostBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const body = parsed.data;
+    const event = body.event ?? getNextMockEvent();
+    const creatorAddress = body.creator_address ?? DEMO_CREATOR;
 
     // Agent evaluates the event
     const decision = await evaluateEvent(event, creatorAddress);
 
     // If agent decides to tip, execute via WDK
-    if (decision.should_tip && body.execute !== false) {
+    if (decision.should_tip && body.execute === true) {
       try {
         const txResults = await sendTip(decision.amount, creatorAddress);
-        return NextResponse.json({
-          decision,
-          transactions: txResults,
-        });
+        return NextResponse.json({ decision, transactions: txResults });
       } catch (err) {
         return NextResponse.json({
           decision,
@@ -36,28 +66,21 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }
 
-/* GET /api/agent — Trigger a mock event (for demo/testing) */
+/* GET /api/agent — Evaluate a mock event (no execution, safe for demo) */
 export async function GET() {
-  const event = getNextMockEvent();
-  const decision = await evaluateEvent(event, "0x_demo_creator");
-
-  if (decision.should_tip) {
-    try {
-      const txResults = await sendTip(decision.amount, "0x_demo_creator");
-      return NextResponse.json({ decision, transactions: txResults });
-    } catch (err) {
-      return NextResponse.json({
-        decision,
-        transactions: [],
-        error: err instanceof Error ? err.message : "Transaction failed",
-      });
-    }
+  try {
+    const event = getNextMockEvent();
+    const decision = await evaluateEvent(event, DEMO_CREATOR);
+    return NextResponse.json({ decision, transactions: [] });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unknown error" },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ decision, transactions: [] });
 }

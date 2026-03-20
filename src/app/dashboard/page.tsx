@@ -120,17 +120,34 @@ export default function Dashboard() {
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch("/api/stats");
+      if (!res.ok) return;
       const data = await res.json();
       setStats(data);
-    } catch {}
+    } catch {
+      // Stats are non-critical — silently retry on next cycle
+    }
   }, []);
 
   // Connect to SSE stream
   useEffect(() => {
     const eventSource = new EventSource("/api/events");
     eventSource.onmessage = (e) => {
-      const entry: AgentLogEntry = JSON.parse(e.data);
-      setLogs((prev) => [...prev.slice(-199), entry]);
+      try {
+        const entry: AgentLogEntry = JSON.parse(e.data);
+        setLogs((prev) => {
+          if (prev.length >= 200) {
+            const next = prev.slice(-149);
+            next.push(entry);
+            return next;
+          }
+          return [...prev, entry];
+        });
+      } catch {
+        // Ignore malformed SSE data
+      }
+    };
+    eventSource.onerror = () => {
+      // Browser auto-reconnects EventSource
     };
     return () => eventSource.close();
   }, []);

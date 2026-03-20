@@ -7,8 +7,11 @@ import type { WalletState, TipSplit, TxResult, BudgetConfig, BudgetTracker } fro
 const SEED_PHRASE = process.env.WDK_SEED_PHRASE ?? "";
 const EVM_PROVIDER = process.env.WDK_EVM_PROVIDER ?? "https://sepolia.drpc.org";
 const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
+export const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
 const USDT_DECIMALS = 6;
+
+const EDITOR_ADDRESS = process.env.EDITOR_WALLET_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
+const CHARITY_ADDRESS = process.env.CHARITY_WALLET_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wdkInstance: InstanceType<typeof WDK> | null = null;
@@ -103,13 +106,13 @@ export function calculateSplit(amount: number, creatorAddress: string): TipSplit
       amount: Number((amount * split_rules.creator).toFixed(2)),
     },
     {
-      recipient: "0x_editor_placeholder",
+      recipient: EDITOR_ADDRESS,
       label: "Editor",
       percentage: split_rules.editor * 100,
       amount: Number((amount * split_rules.editor).toFixed(2)),
     },
     {
-      recipient: "0x_charity_placeholder",
+      recipient: CHARITY_ADDRESS,
       label: "Community Pool",
       percentage: split_rules.charity * 100,
       amount: Number((amount * split_rules.charity).toFixed(2)),
