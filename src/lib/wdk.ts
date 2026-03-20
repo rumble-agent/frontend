@@ -1,10 +1,8 @@
-import WDK from "@tetherto/wdk";
-import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
-import { Contract } from "ethers";
+import { Contract, JsonRpcProvider, Wallet } from "ethers";
 import type { WalletState, TxResult, BudgetConfig, BudgetTracker } from "./types";
 
-/* ─── WDK Singleton ─── */
-const SEED_PHRASE = process.env.WDK_SEED_PHRASE ?? "";
+/* ─── Config ─── */
+const PRIVATE_KEY = process.env.WDK_PRIVATE_KEY ?? "";
 const EVM_PROVIDER = process.env.WDK_EVM_PROVIDER ?? "https://sepolia.drpc.org";
 const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "";
 export const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
@@ -21,27 +19,18 @@ export function setCreatorAddress(address: string): void {
   creatorWallet = address;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let wdkInstance: InstanceType<typeof WDK> | null = null;
+/* ─── Wallet Singleton ─── */
+let wallet: Wallet | null = null;
 
-function getWDK(): InstanceType<typeof WDK> {
-  if (!SEED_PHRASE || SEED_PHRASE.includes("your twelve word")) {
-    throw new Error("WDK_SEED_PHRASE not configured. Set it in .env.local");
+function getWallet(): Wallet {
+  if (!PRIVATE_KEY) {
+    throw new Error("WDK_PRIVATE_KEY not configured. Set it in .env.local");
   }
-  if (!wdkInstance) {
-    wdkInstance = new WDK(SEED_PHRASE);
-    wdkInstance.registerWallet("ethereum", WalletManagerEvm, {
-      provider: EVM_PROVIDER,
-      transferMaxFee: 100000000000000, // 0.0001 ETH max fee safety guard
-    });
+  if (!wallet) {
+    const provider = new JsonRpcProvider(EVM_PROVIDER);
+    wallet = new Wallet(PRIVATE_KEY, provider);
   }
-  return wdkInstance;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getAccount(): Promise<any> {
-  const wdk = getWDK();
-  return wdk.getAccount("ethereum", 0);
+  return wallet;
 }
 
 /* ─── Default Budget Config ─── */
@@ -98,7 +87,7 @@ export function canTip(amount: number): { allowed: boolean; reason?: string } {
   return { allowed: true };
 }
 
-/* ─── WDK Wallet Operations ─── */
+/* ─── Wallet Operations ─── */
 
 /** Convert human-readable USDT amount to on-chain units (6 decimals).
  *  Uses string splitting to avoid IEEE 754 floating-point precision loss. */
@@ -118,8 +107,8 @@ function fromUsdtUnits(units: bigint): number {
 }
 
 export async function getWalletState(): Promise<WalletState> {
-  const account = await getAccount();
-  const address: string = await account.getAddress();
+  const w = getWallet();
+  const address = w.address;
 
   // Query ERC-20 USDT balance
   let balance = 0;
@@ -128,7 +117,7 @@ export async function getWalletState(): Promise<WalletState> {
       "function balanceOf(address) view returns (uint256)",
     ]);
     const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
-    const result: string = await account._provider.call({ to: USDT_CONTRACT, data });
+    const result: string = await w.provider!.call({ to: USDT_CONTRACT, data });
     if (result && result !== "0x") {
       balance = fromUsdtUnits(BigInt(result));
     }
@@ -150,15 +139,14 @@ export async function sendTip(
     throw new Error(validation.reason);
   }
 
-  const account = await getAccount();
+  const w = getWallet();
   const units = toUsdtUnits(amount);
 
   try {
-    const { hash } = await account.transfer({
-      token: USDT_CONTRACT,
-      recipient: creatorAddress,
-      amount: units,
-    });
+    const erc20 = new Contract(USDT_CONTRACT, [
+      "function transfer(address to, uint256 amount) returns (bool)",
+    ], w);
+    const tx = await erc20.transfer(creatorAddress, units);
 
     // Update budget
     budgetTracker.spent_this_session += amount;
@@ -168,7 +156,7 @@ export async function sendTip(
 
     return [{
       success: true,
-      tx_hash: hash,
+      tx_hash: tx.hash,
       amount,
       recipient: creatorAddress,
       chain: CHAIN,
