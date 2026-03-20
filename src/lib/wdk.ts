@@ -1,4 +1,37 @@
+import WDK from "@tetherto/wdk";
+import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
+import { Contract } from "ethers";
 import type { WalletState, TipSplit, TxResult, BudgetConfig, BudgetTracker } from "./types";
+
+/* ─── WDK Singleton ─── */
+const SEED_PHRASE = process.env.WDK_SEED_PHRASE ?? "";
+const EVM_PROVIDER = process.env.WDK_EVM_PROVIDER ?? "https://sepolia.drpc.org";
+const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
+const USDT_DECIMALS = 6;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let wdkInstance: InstanceType<typeof WDK> | null = null;
+
+function getWDK(): InstanceType<typeof WDK> {
+  if (!SEED_PHRASE || SEED_PHRASE.includes("your twelve word")) {
+    throw new Error("WDK_SEED_PHRASE not configured. Set it in .env.local");
+  }
+  if (!wdkInstance) {
+    wdkInstance = new WDK(SEED_PHRASE);
+    wdkInstance.registerWallet("ethereum", WalletManagerEvm, {
+      provider: EVM_PROVIDER,
+      transferMaxFee: 100000000000000, // 0.0001 ETH max fee safety guard
+    });
+  }
+  return wdkInstance;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getAccount(): Promise<any> {
+  const wdk = getWDK();
+  return wdk.getAccount("ethereum", 0);
+}
 
 /* ─── Default Budget Config ─── */
 const DEFAULT_BUDGET: BudgetConfig = {
@@ -12,7 +45,7 @@ const DEFAULT_BUDGET: BudgetConfig = {
   },
 };
 
-/* ─── In-memory state (will be replaced with persistent store) ─── */
+/* ─── In-memory state ─── */
 let budgetTracker: BudgetTracker = {
   spent_this_session: 0,
   tips_count: 0,
@@ -85,19 +118,39 @@ export function calculateSplit(amount: number, creatorAddress: string): TipSplit
 }
 
 /* ─── WDK Wallet Operations ─── */
-// TODO: Replace with actual WDK SDK calls
-// See: https://docs.wallet.tether.io
+
+/** Convert human-readable USDT amount to on-chain units (6 decimals) */
+function toUsdtUnits(amount: number): bigint {
+  return BigInt(Math.round(amount * 10 ** USDT_DECIMALS));
+}
+
+/** Convert on-chain USDT units to human-readable amount */
+function fromUsdtUnits(units: bigint): number {
+  return Number(units) / 10 ** USDT_DECIMALS;
+}
 
 export async function getWalletState(): Promise<WalletState> {
-  // TODO: Initialize WDK and query actual balance
-  // const wdk = await initWDK(seed);
-  // const balance = await wdk.getBalance('USDT');
-  return {
-    address: "0x_placeholder_wallet_address",
-    balance: 142.5,
-    currency: "USDT",
-    chain: "ethereum-sepolia",
-  };
+  const account = await getAccount();
+  const address: string = await account.getAddress();
+
+  // Query ERC-20 USDT balance
+  let balance = 0;
+  try {
+    const erc20 = new Contract(USDT_CONTRACT, [
+      "function balanceOf(address) view returns (uint256)",
+    ]);
+    const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
+    const result: string = await account._provider.call({ to: USDT_CONTRACT, data });
+    if (result && result !== "0x") {
+      balance = fromUsdtUnits(BigInt(result));
+    }
+  } catch {
+    // If token balance fails, fall back to native ETH balance for display
+    const nativeBalance: bigint = await account.getBalance();
+    balance = Number(nativeBalance) / 1e18;
+  }
+
+  return { address, balance, currency: "USDT", chain: CHAIN };
 }
 
 export async function sendTip(
@@ -109,29 +162,47 @@ export async function sendTip(
     throw new Error(validation.reason);
   }
 
+  const account = await getAccount();
   const splits = calculateSplit(amount, creatorAddress);
   const results: TxResult[] = [];
 
   for (const split of splits) {
-    // TODO: Replace with actual WDK transaction
-    // const tx = await wdk.sendUSDT(split.recipient, split.amount);
-    const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+    try {
+      const { hash } = await account.transfer({
+        token: USDT_CONTRACT,
+        recipient: split.recipient,
+        amount: toUsdtUnits(split.amount),
+      });
 
-    results.push({
-      success: true,
-      tx_hash: mockTxHash,
-      amount: split.amount,
-      recipient: split.recipient,
-      chain: "ethereum-sepolia",
-      timestamp: Date.now(),
-    });
+      results.push({
+        success: true,
+        tx_hash: hash,
+        amount: split.amount,
+        recipient: split.recipient,
+        chain: CHAIN,
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      results.push({
+        success: false,
+        tx_hash: "",
+        amount: split.amount,
+        recipient: split.recipient,
+        chain: CHAIN,
+        timestamp: Date.now(),
+      });
+      console.error(`Transfer failed for ${split.label}:`, err instanceof Error ? err.message : err);
+    }
   }
 
-  // Update budget tracker
-  budgetTracker.spent_this_session += amount;
-  budgetTracker.tips_count += 1;
-  budgetTracker.last_tip_at = Date.now();
-  budgetTracker.remaining = budgetConfig.max_per_session - budgetTracker.spent_this_session;
+  // Update budget tracker (even if some transfers failed, count the attempt)
+  const successAmount = results.filter((r) => r.success).reduce((sum, r) => sum + r.amount, 0);
+  if (successAmount > 0) {
+    budgetTracker.spent_this_session += successAmount;
+    budgetTracker.tips_count += 1;
+    budgetTracker.last_tip_at = Date.now();
+    budgetTracker.remaining = budgetConfig.max_per_session - budgetTracker.spent_this_session;
+  }
 
   return results;
 }
