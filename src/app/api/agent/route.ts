@@ -77,8 +77,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ decision, transactions: [] });
   } catch (err) {
+    console.error("POST /api/agent error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Unknown error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -95,8 +96,9 @@ export async function GET(req: NextRequest) {
     const decision = await evaluateEvent(event, getCreatorAddress());
     return NextResponse.json({ decision, transactions: [] });
   } catch (err) {
+    console.error("GET /api/agent error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Unknown error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

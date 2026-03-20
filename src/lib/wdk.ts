@@ -24,7 +24,10 @@ let wallet: Wallet | null = null;
 
 function getWallet(): Wallet {
   if (!PRIVATE_KEY) {
-    throw new Error("WDK_PRIVATE_KEY not configured. Set it in .env.local");
+    throw new Error("WDK_PRIVATE_KEY not configured");
+  }
+  if (!/^0x[a-fA-F0-9]{64}$/.test(PRIVATE_KEY)) {
+    throw new Error("WDK_PRIVATE_KEY format invalid");
   }
   if (!wallet) {
     const provider = new JsonRpcProvider(EVM_PROVIDER);
@@ -50,6 +53,9 @@ let budgetTracker: BudgetTracker = {
 
 let budgetConfig: BudgetConfig = { ...DEFAULT_BUDGET };
 
+/* ─── Tip mutex (prevents concurrent tips from overspending budget) ─── */
+let tipInProgress = false;
+
 /* ─── Budget Management ─── */
 export function getBudget(): BudgetTracker & { config: BudgetConfig } {
   return { ...budgetTracker, config: budgetConfig };
@@ -72,6 +78,9 @@ export function resetBudget(): void {
 
 /* ─── Budget Validation ─── */
 export function canTip(amount: number): { allowed: boolean; reason?: string } {
+  if (tipInProgress) {
+    return { allowed: false, reason: "Another tip is in progress" };
+  }
   if (amount > budgetConfig.max_per_tip) {
     return { allowed: false, reason: `Amount ${amount} exceeds max per tip (${budgetConfig.max_per_tip})` };
   }
@@ -110,22 +119,22 @@ export async function getWalletState(): Promise<WalletState> {
   const w = getWallet();
   const address = w.address;
 
-  // Query ERC-20 USDT balance
   let balance = 0;
-  try {
-    const erc20 = new Contract(USDT_CONTRACT, [
-      "function balanceOf(address) view returns (uint256)",
-    ]);
-    const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
-    const provider = w.provider;
-    if (!provider) throw new Error("No provider connected");
-    const result: string = await provider.call({ to: USDT_CONTRACT, data });
-    if (result && result !== "0x") {
-      balance = fromUsdtUnits(BigInt(result));
+  if (USDT_CONTRACT) {
+    try {
+      const erc20 = new Contract(USDT_CONTRACT, [
+        "function balanceOf(address) view returns (uint256)",
+      ]);
+      const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
+      const provider = w.provider;
+      if (!provider) throw new Error("No provider connected");
+      const result: string = await provider.call({ to: USDT_CONTRACT, data });
+      if (result && result !== "0x") {
+        balance = fromUsdtUnits(BigInt(result));
+      }
+    } catch {
+      console.warn("USDT balance query failed, returning 0");
     }
-  } catch {
-    console.warn("USDT balance query failed, returning 0");
-    balance = 0;
   }
 
   return { address, balance, currency: "USDT", chain: CHAIN };
@@ -136,10 +145,17 @@ export async function sendTip(
   amount: number,
   creatorAddress: string
 ): Promise<TxResult[]> {
+  if (!USDT_CONTRACT) {
+    throw new Error("USDT_CONTRACT_ADDRESS not configured");
+  }
+
   const validation = canTip(amount);
   if (!validation.allowed) {
     throw new Error(validation.reason);
   }
+
+  // Acquire mutex
+  tipInProgress = true;
 
   const w = getWallet();
   const units = toUsdtUnits(amount);
@@ -150,7 +166,13 @@ export async function sendTip(
     ], w);
     const tx = await erc20.transfer(creatorAddress, units);
 
-    // Update budget
+    // Wait for on-chain confirmation before updating budget
+    const receipt = await tx.wait();
+    if (!receipt || receipt.status === 0) {
+      throw new Error("Transaction reverted on-chain");
+    }
+
+    // Only update budget after confirmed success
     budgetTracker.spent_this_session += amount;
     budgetTracker.tips_count += 1;
     budgetTracker.last_tip_at = Date.now();
@@ -174,5 +196,7 @@ export async function sendTip(
       chain: CHAIN,
       timestamp: Date.now(),
     }];
+  } finally {
+    tipInProgress = false;
   }
 }

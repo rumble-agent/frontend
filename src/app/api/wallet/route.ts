@@ -18,8 +18,9 @@ export async function GET() {
 
     return NextResponse.json({ wallet, budget, creator_address });
   } catch (err) {
+    console.error("GET /api/wallet error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to get wallet state" },
+      { error: "Failed to get wallet state" },
       { status: 500 }
     );
   }
@@ -65,8 +66,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (err) {
+    console.error("POST /api/wallet error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to update wallet" },
+      { error: "Failed to update wallet" },
       { status: 400 }
     );
   }

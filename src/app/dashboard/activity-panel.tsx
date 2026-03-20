@@ -69,7 +69,7 @@ export function ActivityPanel() {
               </div>
             ) : (
               <div className="space-y-2">
-                {[...stats.history].reverse().map((record) => (
+                {stats.history.map((record) => (
                   <div
                     key={record.id}
                     className={`rounded-lg border-l-2 p-4 ${
