@@ -381,7 +381,7 @@ export default function Dashboard() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 mt-4">
           <div className="px-4 py-2.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] text-red-400 text-[13px] font-[family-name:var(--font-jetbrains)] flex items-center justify-between">
             <span>{actionError}</span>
-            <button onClick={() => setActionError(null)} className="text-red-400/60 hover:text-red-400 ml-4 shrink-0">
+            <button onClick={() => setActionError(null)} aria-label="Dismiss error" className="text-red-400/60 hover:text-red-400 ml-4 shrink-0">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
             </button>
           </div>
@@ -469,8 +469,9 @@ export default function Dashboard() {
                 <h2 className="text-[14px] font-semibold">Creator Wallet</h2>
               </div>
               <div className="ml-9">
-                <p className="text-zinc-500 text-[12px] mb-2">Who should receive the tips?</p>
+                <label htmlFor="setup-creator-address" className="text-zinc-500 text-[12px] mb-2 block">Who should receive the tips?</label>
                 <input
+                  id="setup-creator-address"
                   type="text"
                   placeholder="0x..."
                   value={creatorDraft}
@@ -612,8 +613,12 @@ export default function Dashboard() {
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden flex flex-col" style={{ minHeight: "500px" }}>
                 {/* Tab bar */}
                 <div className="flex items-center border-b border-white/[0.04] shrink-0">
-                  <div className="flex">
+                  <div className="flex" role="tablist" aria-label="Agent activity">
                     <button
+                      id="tab-activity"
+                      role="tab"
+                      aria-selected={activeTab === "activity"}
+                      aria-controls="panel-activity"
                       onClick={() => { setActiveTab("activity"); fetchStats(); }}
                       className={`px-5 py-3 text-[12px] font-medium transition-colors border-b-2 ${
                         activeTab === "activity" ? "text-white border-[#00D4FF]" : "text-zinc-500 border-transparent hover:text-zinc-300"
@@ -625,6 +630,10 @@ export default function Dashboard() {
                       )}
                     </button>
                     <button
+                      id="tab-log"
+                      role="tab"
+                      aria-selected={activeTab === "log"}
+                      aria-controls="panel-log"
                       onClick={() => setActiveTab("log")}
                       className={`px-5 py-3 text-[12px] font-medium transition-colors border-b-2 ${
                         activeTab === "log" ? "text-white border-[#00D4FF]" : "text-zinc-500 border-transparent hover:text-zinc-300"
@@ -650,7 +659,7 @@ export default function Dashboard() {
                 {/* Tab content */}
                 <div ref={logContainerRef} className="flex-1 overflow-y-auto max-h-[600px]">
                   {activeTab === "activity" ? (
-                    <div className="p-5">
+                    <div id="panel-activity" role="tabpanel" aria-labelledby="tab-activity" className="p-5">
                       {!stats?.history?.length ? (
                         <div className="flex flex-col items-center justify-center py-16">
                           <div className="w-10 h-10 rounded-xl border border-white/[0.06] bg-white/[0.02] flex items-center justify-center mb-4">
@@ -714,7 +723,7 @@ export default function Dashboard() {
                       )}
                     </div>
                   ) : (
-                    <div className="p-5">
+                    <div id="panel-log" role="tabpanel" aria-labelledby="tab-log" className="p-5">
                       {logs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-zinc-600 font-[family-name:var(--font-jetbrains)] text-[13px]">
                           <p><span className="text-zinc-700">&gt;</span> Waiting for events...</p>
@@ -846,6 +855,7 @@ export default function Dashboard() {
                     <input
                       type="text"
                       placeholder="0x..."
+                      aria-label="Creator wallet address"
                       value={creatorDraft}
                       onChange={(e) => setCreatorDraft(e.target.value)}
                       className={`w-full bg-white/[0.04] border rounded-lg px-3 py-2 text-[11px] text-white placeholder-zinc-700 outline-none focus:border-[#00D4FF]/40 transition-colors ${
