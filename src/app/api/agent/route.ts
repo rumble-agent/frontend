@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateEvent, getNextMockEvent, updateLastDecisionTx } from "@/lib/agent";
-import { sendTip, canTip } from "@/lib/wdk";
+import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 import { z } from "zod";
 
 /* ─── Auth ─── */
@@ -39,8 +39,6 @@ const PostBodySchema = z.object({
   execute: z.boolean().optional(),
 });
 
-const DEMO_CREATOR = process.env.DEMO_CREATOR_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
-
 /* POST /api/agent — Evaluate an event and optionally execute tip */
 export async function POST(req: NextRequest) {
   try {
@@ -63,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     const body = parsed.data;
     const event = body.event ?? getNextMockEvent();
-    const creatorAddress = body.creator_address ?? DEMO_CREATOR;
+    const creatorAddress = body.creator_address ?? getCreatorAddress();
 
     // Agent evaluates the event
     const decision = await evaluateEvent(event, creatorAddress);
@@ -109,7 +107,7 @@ export async function GET(req: NextRequest) {
     }
 
     const event = getNextMockEvent();
-    const decision = await evaluateEvent(event, DEMO_CREATOR);
+    const decision = await evaluateEvent(event, getCreatorAddress());
     return NextResponse.json({ decision, transactions: [] });
   } catch (err) {
     return NextResponse.json(

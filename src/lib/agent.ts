@@ -1,8 +1,8 @@
 import { generateObject } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createGroq } from "@ai-sdk/groq";
 import { z } from "zod";
 import type { StreamEvent, AgentDecision, AgentLogEntry, DecisionRecord, AgentStats } from "./types";
-import { canTip, calculateSplit, getBudget, CHAIN } from "./wdk";
+import { canTip, getBudget, CHAIN } from "./wdk";
 
 /* ─── Log Store (in-memory, streamed via SSE) ─── */
 type LogListener = (entry: AgentLogEntry) => void;
@@ -101,7 +101,7 @@ async function evaluateWithLLM(
   budget: { remaining: number; max_per_tip: number; spent_this_session: number; max_per_session: number }
 ): Promise<z.infer<typeof tipDecisionSchema>> {
   const { object } = await generateObject({
-    model: anthropic("claude-haiku-4-5-20251001"),
+    model: createGroq()("meta-llama/llama-4-scout-17b-16e-instruct"),
     schema: tipDecisionSchema,
     prompt: `You are an autonomous tipping agent for Rumble, a live streaming platform. You monitor stream events in real-time and decide whether creators deserve a tip based on engagement signals.
 
@@ -176,10 +176,8 @@ function canCallLLM(): boolean {
 }
 
 function hasValidApiKey(): boolean {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return false;
-  if (key.length < 20) return false;
-  if (key.includes("your-") || key === "sk-ant-xxx") return false;
+  const key = process.env.GROQ_API_KEY;
+  if (!key || key.length < 20 || key.includes("your-") || key === "gsk_xxx") return false;
   return true;
 }
 
@@ -204,11 +202,11 @@ export async function evaluateEvent(
   // Try LLM first, fall back to rules
   if (hasValidApiKey() && canCallLLM()) {
     try {
-      emit("llm", "Reasoning with Claude...");
+      emit("llm", "Reasoning with Groq LLM...");
       lastLLMCall = Date.now();
       decision = await evaluateWithLLM(event, budgetCtx);
       usedLLM = true;
-      emit("llm", `Claude: score=${decision.score} tip=${decision.should_tip ? `${decision.amount} USDT` : "skip"}`);
+      emit("llm", `LLM: score=${decision.score} tip=${decision.should_tip ? `${decision.amount} USDT` : "skip"}`);
     } catch (err) {
       emit("wrn", `LLM failed: ${err instanceof Error ? err.message : "Unknown error"}. Using rule-based fallback.`);
       const score = scoreEventFallback(event);
@@ -249,7 +247,6 @@ export async function evaluateEvent(
         amount: 0,
         score: decision.score,
         reasoning: budgetCheck.reason!,
-        split: [],
         event,
         timestamp: Date.now(),
       };
@@ -265,7 +262,6 @@ export async function evaluateEvent(
       amount: 0,
       score: decision.score,
       reasoning: decision.reasoning,
-      split: [],
       event,
       timestamp: Date.now(),
     };
@@ -273,10 +269,7 @@ export async function evaluateEvent(
     return skipDecision;
   }
 
-  // Calculate splits
-  const split = calculateSplit(decision.amount, creatorAddress);
-
-  emit(usedLLM ? "act" : "llm", `→ Tip ${decision.amount} USDT | ${decision.reasoning}`);
+  emit(usedLLM ? "act" : "llm", `→ Tip ${decision.amount} USDT to ${creatorAddress.slice(0, 6)}...${creatorAddress.slice(-4)} | ${decision.reasoning}`);
   emit("inf", `Balance: ${budget.remaining.toFixed(2)} USDT remaining | Budget: ${((budget.spent_this_session / budget.config.max_per_session) * 100).toFixed(0)}% consumed`);
 
   const tipDecision: AgentDecision = {
@@ -284,7 +277,6 @@ export async function evaluateEvent(
     amount: decision.amount,
     score: decision.score,
     reasoning: decision.reasoning,
-    split,
     event,
     timestamp: Date.now(),
   };

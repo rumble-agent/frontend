@@ -15,9 +15,9 @@ interface WalletData {
       max_per_session: number;
       max_per_tip: number;
       rate_limit_seconds: number;
-      split_rules: { creator: number; editor: number; charity: number };
     };
   };
+  creator_address: string;
 }
 
 interface AgentResponse {
@@ -92,12 +92,14 @@ export default function Dashboard() {
   const [lastResponse, setLastResponse] = useState<AgentResponse | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [activeTab, setActiveTab] = useState<"log" | "history">("log");
-  const [editingSplit, setEditingSplit] = useState(false);
-  const [splitValues, setSplitValues] = useState({ creator: 80, editor: 10, charity: 10 });
   const [walletError, setWalletError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [triggerLoading, setTriggerLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [creatorAddress, setCreatorAddress] = useState("");
+  const [creatorDraft, setCreatorDraft] = useState("");
+  const [editingCreator, setEditingCreator] = useState(false);
+  const [creatorSaving, setCreatorSaving] = useState(false);
   const [rumble, setRumble] = useState<RumbleStatus | null>(null);
   const [rumbleLoading, setRumbleLoading] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -106,6 +108,8 @@ export default function Dashboard() {
   const inflightRef = useRef(false);
   const seenIdsRef = useRef(new Set<string>());
   const userScrolledRef = useRef(false);
+
+  const isValidAddress = (addr: string) => /^0x[a-fA-F0-9]{40}$/.test(addr);
 
   // Fetch wallet state
   const fetchWallet = useCallback(async () => {
@@ -119,12 +123,9 @@ export default function Dashboard() {
       }
       const data = await res.json();
       setWallet(data);
-      if (data.budget?.config?.split_rules) {
-        setSplitValues({
-          creator: Math.round(data.budget.config.split_rules.creator * 100),
-          editor: Math.round(data.budget.config.split_rules.editor * 100),
-          charity: Math.round(data.budget.config.split_rules.charity * 100),
-        });
+      if (data.creator_address) {
+        setCreatorAddress(data.creator_address);
+        setCreatorDraft(data.creator_address);
       }
     } catch {
       setWalletError("Network error");
@@ -149,10 +150,8 @@ export default function Dashboard() {
     eventSource.onmessage = (e) => {
       try {
         const entry: AgentLogEntry = JSON.parse(e.data);
-        // Dedup: skip entries we've already seen (on SSE reconnect)
         if (seenIdsRef.current.has(entry.id)) return;
         seenIdsRef.current.add(entry.id);
-        // Cap the seen IDs set to prevent unbounded growth
         if (seenIdsRef.current.size > 500) {
           const arr = Array.from(seenIdsRef.current);
           seenIdsRef.current = new Set(arr.slice(-300));
@@ -169,13 +168,11 @@ export default function Dashboard() {
         // Ignore malformed SSE data
       }
     };
-    eventSource.onerror = () => {
-      // Browser auto-reconnects EventSource
-    };
+    eventSource.onerror = () => {};
     return () => eventSource.close();
   }, []);
 
-  // Smart auto-scroll: only scroll if user is near the bottom
+  // Smart auto-scroll
   useEffect(() => {
     if (activeTab === "log" && !userScrolledRef.current) {
       logEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -188,7 +185,6 @@ export default function Dashboard() {
     if (!container) return;
     const onScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      // If user is within 80px of bottom, consider them "at bottom"
       userScrolledRef.current = scrollHeight - scrollTop - clientHeight > 80;
     };
     container.addEventListener("scroll", onScroll, { passive: true });
@@ -215,9 +211,8 @@ export default function Dashboard() {
     fetchRumbleStatus();
   }, [fetchWallet, fetchStats, fetchRumbleStatus]);
 
-  // Trigger single event (POST with auth)
+  // Trigger single event
   const triggerEvent = useCallback(async () => {
-    // In-flight guard: skip if previous request still running
     if (inflightRef.current) return;
     inflightRef.current = true;
     setTriggerLoading(true);
@@ -226,7 +221,7 @@ export default function Dashboard() {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ execute: false }),
+        body: JSON.stringify({ execute: false, creator_address: creatorAddress || undefined }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -243,7 +238,7 @@ export default function Dashboard() {
       inflightRef.current = false;
       setTriggerLoading(false);
     }
-  }, [fetchWallet, fetchStats]);
+  }, [fetchWallet, fetchStats, creatorAddress]);
 
   // Auto-run
   const toggleAutoRun = () => {
@@ -267,7 +262,7 @@ export default function Dashboard() {
       const res = await fetch("/api/rumble", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, execute: false }),
+        body: JSON.stringify({ action, execute: false, creator_address: creatorAddress || undefined }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -283,7 +278,7 @@ export default function Dashboard() {
     }
   };
 
-  // Reset budget (with auth + error handling)
+  // Reset budget
   const resetBudget = async () => {
     setActionError(null);
     try {
@@ -304,34 +299,28 @@ export default function Dashboard() {
     }
   };
 
-  // Save split config (with error handling)
-  const saveSplit = async () => {
-    const total = splitValues.creator + splitValues.editor + splitValues.charity;
-    if (total !== 100) return;
+  // Save creator address
+  const saveCreator = async () => {
+    if (!creatorDraft || !isValidAddress(creatorDraft)) return;
+    setCreatorSaving(true);
     setActionError(null);
     try {
       const res = await fetch("/api/wallet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          budget_config: {
-            split_rules: {
-              creator: splitValues.creator / 100,
-              editor: splitValues.editor / 100,
-              charity: splitValues.charity / 100,
-            },
-          },
-        }),
+        body: JSON.stringify({ creator_address: creatorDraft }),
       });
       if (!res.ok) {
         const err = await res.json();
-        setActionError(err.error ?? "Failed to save split");
+        setActionError(err.error ?? "Failed to save creator address");
         return;
       }
-      setEditingSplit(false);
-      fetchWallet();
+      setCreatorAddress(creatorDraft);
+      setEditingCreator(false);
     } catch {
       setActionError("Network error");
+    } finally {
+      setCreatorSaving(false);
     }
   };
 
@@ -358,7 +347,6 @@ export default function Dashboard() {
   const spent = budget?.spent_this_session ?? 0;
   const maxSession = budget?.config.max_per_session ?? 50;
   const spentPercent = maxSession > 0 ? (spent / maxSession) * 100 : 0;
-  const splitTotal = splitValues.creator + splitValues.editor + splitValues.charity;
   const s = stats?.stats;
 
   return (
@@ -405,12 +393,12 @@ export default function Dashboard() {
                 <h3 className="font-[family-name:var(--font-heading)] font-bold text-sm text-white mb-1.5">How this works</h3>
                 <p className="text-[13px] text-zinc-400 leading-relaxed max-w-2xl">
                   Your agent monitors Rumble live streams for engagement events (viewer spikes, rants, new subs, milestones),
-                  evaluates them with Claude AI, and executes USDT tips onchain via Tether WDK.
-                  Click <span className="text-violet-400 font-medium">Start Rumble</span> to connect to your live stream,
+                  evaluates them with AI, and sends USDT tips directly to the creator via Tether WDK.
+                  Set the creator&apos;s wallet address below, then click <span className="text-violet-400 font-medium">Start Rumble</span> to connect to a live stream,
                   or <span className="text-zinc-300 font-medium">Trigger Event</span> to test with a mock event.
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
-                  <span>Rumble Stream → Event Detection → Claude Brain → Budget Check → WDK Tip</span>
+                  <span>Rumble Stream → Event Detection → AI Brain → Budget Check → WDK Tip</span>
                 </div>
               </div>
             </div>
@@ -499,7 +487,7 @@ export default function Dashboard() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left column — Wallet + Budget + Split + Decision */}
+          {/* Left column */}
           <div className="lg:col-span-4 xl:col-span-3 space-y-4">
             {/* Wallet */}
             <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
@@ -568,6 +556,79 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Creator Address */}
+            <div className={`rounded-xl border p-5 ${
+              creatorAddress && isValidAddress(creatorAddress)
+                ? "border-[#00D4FF]/20 bg-[#00D4FF]/[0.02]"
+                : "border-amber-500/20 bg-amber-500/[0.02]"
+            }`}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide">Creator Wallet</p>
+                {!editingCreator ? (
+                  <button
+                    onClick={() => { setCreatorDraft(creatorAddress); setEditingCreator(true); }}
+                    className="text-[10px] text-zinc-600 hover:text-[#00D4FF] transition-colors"
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingCreator(false)}
+                      className="text-[10px] text-zinc-600 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveCreator}
+                      disabled={creatorSaving || !creatorDraft || !isValidAddress(creatorDraft)}
+                      className="text-[10px] text-[#00D4FF] hover:text-white transition-colors disabled:text-red-400"
+                    >
+                      {creatorSaving ? "..." : "Save"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {editingCreator ? (
+                <div className="font-[family-name:var(--font-jetbrains)] text-[12px]">
+                  <label className="text-zinc-400 text-[11px] mb-1.5 block">
+                    Paste the creator&apos;s EVM wallet address
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="0x..."
+                    value={creatorDraft}
+                    onChange={(e) => setCreatorDraft(e.target.value)}
+                    className={`w-full bg-white/[0.04] border rounded-lg px-3 py-2 text-[11px] text-white placeholder-zinc-700 outline-none focus:border-[#00D4FF]/40 transition-colors ${
+                      creatorDraft && !isValidAddress(creatorDraft)
+                        ? "border-red-500/30"
+                        : "border-white/[0.08]"
+                    }`}
+                  />
+                  {creatorDraft && !isValidAddress(creatorDraft) && (
+                    <p className="text-red-400 text-[10px] mt-1">Invalid address format</p>
+                  )}
+                </div>
+              ) : (
+                <div className="font-[family-name:var(--font-jetbrains)] text-[12px]">
+                  {creatorAddress ? (
+                    <div>
+                      <div className="text-[#00D4FF] truncate" title={creatorAddress}>
+                        {creatorAddress}
+                      </div>
+                      <p className="text-zinc-600 text-[11px] mt-1">100% of tips go to this address</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-amber-400/80">Not set</p>
+                      <p className="text-zinc-600 text-[11px] mt-1">Click Edit to set the creator&apos;s wallet address</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Budget */}
             <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
               <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Session Budget</p>
@@ -589,88 +650,6 @@ export default function Dashboard() {
                   <span>{budget?.remaining.toFixed(2) ?? "—"} remaining</span>
                 </div>
               </div>
-            </div>
-
-            {/* Split Config (editable) */}
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide">Split Rules</p>
-                {!editingSplit ? (
-                  <button
-                    onClick={() => setEditingSplit(true)}
-                    className="text-[10px] text-zinc-600 hover:text-[#00D4FF] transition-colors"
-                  >
-                    Edit
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingSplit(false)}
-                      className="text-[10px] text-zinc-600 hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={saveSplit}
-                      disabled={splitTotal !== 100}
-                      className="text-[10px] text-[#00D4FF] hover:text-white transition-colors disabled:text-red-400"
-                    >
-                      Save
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {editingSplit ? (
-                <div className="space-y-3 font-[family-name:var(--font-jetbrains)] text-[12px]">
-                  {(["creator", "editor", "charity"] as const).map((key) => (
-                    <div key={key}>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-zinc-400 capitalize">{key === "charity" ? "Community" : key}</span>
-                        <span className="text-white">{splitValues[key]}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={splitValues[key]}
-                        onChange={(e) => setSplitValues((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
-                        className="w-full h-1 rounded-full appearance-none bg-white/[0.08] accent-[#00D4FF] cursor-pointer"
-                      />
-                    </div>
-                  ))}
-                  {splitTotal !== 100 && (
-                    <p className="text-red-400 text-[10px]">Total must equal 100% (currently {splitTotal}%)</p>
-                  )}
-                  {/* Visual split bar */}
-                  <div className="flex h-2 rounded-full overflow-hidden mt-1">
-                    <div className="bg-[#00D4FF]" style={{ width: `${splitValues.creator}%` }} />
-                    <div className="bg-violet-500" style={{ width: `${splitValues.editor}%` }} />
-                    <div className="bg-emerald-500" style={{ width: `${splitValues.charity}%` }} />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2 font-[family-name:var(--font-jetbrains)] text-[12px]">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">Creator</span>
-                    <span className="text-white">{((budget?.config.split_rules.creator ?? 0.8) * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">Editor</span>
-                    <span className="text-white">{((budget?.config.split_rules.editor ?? 0.1) * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">Community Pool</span>
-                    <span className="text-white">{((budget?.config.split_rules.charity ?? 0.1) * 100).toFixed(0)}%</span>
-                  </div>
-                  {/* Visual split bar */}
-                  <div className="flex h-2 rounded-full overflow-hidden mt-1">
-                    <div className="bg-[#00D4FF]" style={{ width: `${(budget?.config.split_rules.creator ?? 0.8) * 100}%` }} />
-                    <div className="bg-violet-500" style={{ width: `${(budget?.config.split_rules.editor ?? 0.1) * 100}%` }} />
-                    <div className="bg-emerald-500" style={{ width: `${(budget?.config.split_rules.charity ?? 0.1) * 100}%` }} />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Last Decision */}

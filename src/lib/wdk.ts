@@ -1,7 +1,7 @@
 import WDK from "@tetherto/wdk";
 import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
 import { Contract } from "ethers";
-import type { WalletState, TipSplit, TxResult, BudgetConfig, BudgetTracker } from "./types";
+import type { WalletState, TxResult, BudgetConfig, BudgetTracker } from "./types";
 
 /* ─── WDK Singleton ─── */
 const SEED_PHRASE = process.env.WDK_SEED_PHRASE ?? "";
@@ -10,9 +10,16 @@ const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "";
 export const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
 const USDT_DECIMALS = 6;
 
-const EDITOR_ADDRESS = process.env.EDITOR_WALLET_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
-const CHARITY_ADDRESS = process.env.CHARITY_WALLET_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
-const TIP_SPLITTER_ADDRESS = process.env.TIP_SPLITTER_ADDRESS ?? "";
+/* ─── Dynamic Creator Address ─── */
+let creatorWallet: string = process.env.DEMO_CREATOR_ADDRESS ?? "";
+
+export function getCreatorAddress(): string {
+  return creatorWallet;
+}
+
+export function setCreatorAddress(address: string): void {
+  creatorWallet = address;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wdkInstance: InstanceType<typeof WDK> | null = null;
@@ -42,11 +49,6 @@ const DEFAULT_BUDGET: BudgetConfig = {
   max_per_session: 50,
   max_per_tip: 5,
   rate_limit_seconds: 30,
-  split_rules: {
-    creator: 0.8,
-    editor: 0.1,
-    charity: 0.1,
-  },
 };
 
 /* ─── In-memory state ─── */
@@ -65,13 +67,7 @@ export function getBudget(): BudgetTracker & { config: BudgetConfig } {
 }
 
 export function updateBudgetConfig(config: Partial<BudgetConfig>): BudgetConfig {
-  budgetConfig = {
-    ...budgetConfig,
-    ...config,
-    split_rules: config.split_rules
-      ? { ...budgetConfig.split_rules, ...config.split_rules }
-      : budgetConfig.split_rules,
-  };
+  budgetConfig = { ...budgetConfig, ...config };
   budgetTracker.remaining = budgetConfig.max_per_session - budgetTracker.spent_this_session;
   return budgetConfig;
 }
@@ -100,36 +96,6 @@ export function canTip(amount: number): { allowed: boolean; reason?: string } {
     }
   }
   return { allowed: true };
-}
-
-/* ─── Calculate Tip Split (remainder goes to last recipient to avoid rounding loss) ─── */
-export function calculateSplit(amount: number, creatorAddress: string): TipSplit[] {
-  const { split_rules } = budgetConfig;
-  const creatorAmount = Number((amount * split_rules.creator).toFixed(2));
-  const editorAmount = Number((amount * split_rules.editor).toFixed(2));
-  // Remainder to community pool — ensures splits sum to exactly `amount`
-  const communityAmount = Number((amount - creatorAmount - editorAmount).toFixed(2));
-
-  return [
-    {
-      recipient: creatorAddress,
-      label: "Creator",
-      percentage: split_rules.creator * 100,
-      amount: creatorAmount,
-    },
-    {
-      recipient: EDITOR_ADDRESS,
-      label: "Editor",
-      percentage: split_rules.editor * 100,
-      amount: editorAmount,
-    },
-    {
-      recipient: CHARITY_ADDRESS,
-      label: "Community Pool",
-      percentage: split_rules.charity * 100,
-      amount: communityAmount,
-    },
-  ];
 }
 
 /* ─── WDK Wallet Operations ─── */
@@ -174,6 +140,7 @@ export async function getWalletState(): Promise<WalletState> {
   return { address, balance, currency: "USDT", chain: CHAIN };
 }
 
+/** Send USDT tip directly to the creator — single ERC-20 transfer */
 export async function sendTip(
   amount: number,
   creatorAddress: string
@@ -183,137 +150,39 @@ export async function sendTip(
     throw new Error(validation.reason);
   }
 
-  // Use TipSplitter contract if deployed, otherwise fallback to direct transfers
-  if (TIP_SPLITTER_ADDRESS) {
-    return sendTipViaSplitter(amount, creatorAddress);
-  }
-  return sendTipDirect(amount, creatorAddress);
-}
-
-/* ─── Atomic tip via TipSplitter contract (single tx) ─── */
-async function sendTipViaSplitter(
-  amount: number,
-  creatorAddress: string
-): Promise<TxResult[]> {
   const account = await getAccount();
-  const address: string = await account.getAddress();
-  const totalUnits = toUsdtUnits(amount);
-  const splits = calculateSplit(amount, creatorAddress);
-
-  const { split_rules } = budgetConfig;
-  const creatorBps = Math.round(split_rules.creator * 10000);
-  const editorBps = Math.round(split_rules.editor * 10000);
-
-  const splitterAbi = new Contract(TIP_SPLITTER_ADDRESS, [
-    "function tipWithSplit(uint256 amount, address creator, address editor, address community, uint256 creatorBps, uint256 editorBps) external",
-  ]);
-  const erc20Abi = new Contract(USDT_CONTRACT, [
-    "function approve(address spender, uint256 amount) external returns (bool)",
-    "function allowance(address owner, address spender) view returns (uint256)",
-  ]);
+  const units = toUsdtUnits(amount);
 
   try {
-    // Step 1: Check current allowance and approve if needed
-    const allowanceData = erc20Abi.interface.encodeFunctionData("allowance", [address, TIP_SPLITTER_ADDRESS]);
-    const allowanceResult: string = await account._provider.call({ to: USDT_CONTRACT, data: allowanceData });
-    const currentAllowance = BigInt(allowanceResult || "0x0");
+    const { hash } = await account.transfer({
+      token: USDT_CONTRACT,
+      recipient: creatorAddress,
+      amount: units,
+    });
 
-    if (currentAllowance < totalUnits) {
-      // USDT requires resetting allowance to 0 before setting a new non-zero value
-      if (currentAllowance > BigInt(0)) {
-        const resetData = erc20Abi.interface.encodeFunctionData("approve", [TIP_SPLITTER_ADDRESS, 0]);
-        await account.sendTransaction({ to: USDT_CONTRACT, data: resetData });
-      }
-      const approveData = erc20Abi.interface.encodeFunctionData("approve", [TIP_SPLITTER_ADDRESS, totalUnits]);
-      await account.sendTransaction({ to: USDT_CONTRACT, data: approveData });
-    }
-
-    // Step 2: Call tipWithSplit — single atomic transaction
-    const tipData = splitterAbi.interface.encodeFunctionData("tipWithSplit", [
-      totalUnits,
-      creatorAddress,
-      EDITOR_ADDRESS,
-      CHARITY_ADDRESS,
-      creatorBps,
-      editorBps,
-    ]);
-    const { hash } = await account.sendTransaction({ to: TIP_SPLITTER_ADDRESS, data: tipData });
-
-    // All splits succeeded atomically
-    const results: TxResult[] = splits.map((split) => ({
-      success: true,
-      tx_hash: hash,
-      amount: split.amount,
-      recipient: split.recipient,
-      chain: CHAIN,
-      timestamp: Date.now(),
-    }));
-
+    // Update budget
     budgetTracker.spent_this_session += amount;
     budgetTracker.tips_count += 1;
     budgetTracker.last_tip_at = Date.now();
     budgetTracker.remaining = budgetConfig.max_per_session - budgetTracker.spent_this_session;
 
-    return results;
-  } catch (err) {
-    console.error("TipSplitter failed:", err instanceof Error ? err.message : err);
-    return splits.map((split) => ({
-      success: false,
-      tx_hash: "",
-      amount: split.amount,
-      recipient: split.recipient,
+    return [{
+      success: true,
+      tx_hash: hash,
+      amount,
+      recipient: creatorAddress,
       chain: CHAIN,
       timestamp: Date.now(),
-    }));
+    }];
+  } catch (err) {
+    console.error("Tip transfer failed:", err instanceof Error ? err.message : err);
+    return [{
+      success: false,
+      tx_hash: "",
+      amount,
+      recipient: creatorAddress,
+      chain: CHAIN,
+      timestamp: Date.now(),
+    }];
   }
-}
-
-/* ─── Fallback: direct transfers (3 separate txs) ─── */
-async function sendTipDirect(
-  amount: number,
-  creatorAddress: string
-): Promise<TxResult[]> {
-  const account = await getAccount();
-  const splits = calculateSplit(amount, creatorAddress);
-  const results: TxResult[] = [];
-
-  for (const split of splits) {
-    try {
-      const { hash } = await account.transfer({
-        token: USDT_CONTRACT,
-        recipient: split.recipient,
-        amount: toUsdtUnits(split.amount),
-      });
-
-      results.push({
-        success: true,
-        tx_hash: hash,
-        amount: split.amount,
-        recipient: split.recipient,
-        chain: CHAIN,
-        timestamp: Date.now(),
-      });
-    } catch (err) {
-      results.push({
-        success: false,
-        tx_hash: "",
-        amount: split.amount,
-        recipient: split.recipient,
-        chain: CHAIN,
-        timestamp: Date.now(),
-      });
-      console.error(`Transfer failed for ${split.label}:`, err instanceof Error ? err.message : err);
-    }
-  }
-
-  // Update budget tracker based on actual successful amounts
-  const successAmount = results.filter((r) => r.success).reduce((sum, r) => sum + r.amount, 0);
-  if (successAmount > 0) {
-    budgetTracker.spent_this_session += successAmount;
-    budgetTracker.tips_count += 1;
-    budgetTracker.last_tip_at = Date.now();
-    budgetTracker.remaining = budgetConfig.max_per_session - budgetTracker.spent_this_session;
-  }
-
-  return results;
 }

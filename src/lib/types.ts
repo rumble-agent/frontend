@@ -18,17 +18,8 @@ export interface AgentDecision {
   amount: number;
   score: number;
   reasoning: string;
-  split: TipSplit[];
   event: StreamEvent;
   timestamp: number;
-}
-
-/* ─── Tip Split (how a tip is distributed) ─── */
-export interface TipSplit {
-  recipient: string;
-  label: string;
-  percentage: number;
-  amount: number;
 }
 
 /* ─── Wallet State ─── */
@@ -44,11 +35,6 @@ export interface BudgetConfig {
   max_per_session: number;
   max_per_tip: number;
   rate_limit_seconds: number;
-  split_rules: {
-    creator: number;
-    editor: number;
-    charity: number;
-  };
 }
 
 /* ─── Budget Tracker (runtime state) ─── */

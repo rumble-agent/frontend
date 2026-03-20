@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletState, getBudget, updateBudgetConfig, resetBudget } from "@/lib/wdk";
+import { getWalletState, getBudget, updateBudgetConfig, resetBudget, getCreatorAddress, setCreatorAddress } from "@/lib/wdk";
 import { z } from "zod";
 
 const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
@@ -16,28 +16,20 @@ function checkAuth(req: NextRequest): boolean {
   return mismatch === 0;
 }
 
-const SplitRulesSchema = z.object({
-  creator: z.number().min(0).max(1),
-  editor: z.number().min(0).max(1),
-  charity: z.number().min(0).max(1),
-}).refine((r) => Math.abs(r.creator + r.editor + r.charity - 1) < 0.001, {
-  message: "Split rules must sum to 1.0",
-});
-
 const BudgetConfigSchema = z.object({
   max_per_session: z.number().positive().optional(),
   max_per_tip: z.number().positive().optional(),
   rate_limit_seconds: z.number().nonnegative().optional(),
-  split_rules: SplitRulesSchema.optional(),
 });
 
-/* GET /api/wallet — Get wallet state + budget */
+/* GET /api/wallet — Get wallet state + budget + creator address */
 export async function GET() {
   try {
     const wallet = await getWalletState();
     const budget = getBudget();
+    const creator_address = getCreatorAddress();
 
-    return NextResponse.json({ wallet, budget });
+    return NextResponse.json({ wallet, budget, creator_address });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to get wallet state" },
@@ -46,7 +38,7 @@ export async function GET() {
   }
 }
 
-/* POST /api/wallet — Update budget config or reset budget */
+/* POST /api/wallet — Update budget config, creator address, or reset budget */
 export async function POST(req: NextRequest) {
   try {
     if (!checkAuth(req)) {
@@ -61,6 +53,15 @@ export async function POST(req: NextRequest) {
     if (raw.action === "reset_budget") {
       resetBudget();
       return NextResponse.json({ message: "Budget reset", budget: getBudget() });
+    }
+
+    if (raw.creator_address !== undefined) {
+      const addrRegex = /^0x[a-fA-F0-9]{40}$/;
+      if (!addrRegex.test(raw.creator_address)) {
+        return NextResponse.json({ error: "Invalid creator address" }, { status: 400 });
+      }
+      setCreatorAddress(raw.creator_address);
+      return NextResponse.json({ message: "Creator address updated", creator_address: raw.creator_address });
     }
 
     if (raw.budget_config) {

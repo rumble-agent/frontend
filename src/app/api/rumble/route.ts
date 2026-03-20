@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isRumbleConfigured, getRumbleStatus, startRumblePoller, stopRumblePoller } from "@/lib/rumble";
 import { evaluateEvent, updateLastDecisionTx } from "@/lib/agent";
-import { sendTip, canTip } from "@/lib/wdk";
+import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 
 /* ─── Auth ─── */
 const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
 const IS_DEV = process.env.NODE_ENV === "development";
-const DEMO_CREATOR = process.env.DEMO_CREATOR_ADDRESS ?? "0x000000000000000000000000000000000000dEaD";
-
 function checkAuth(req: NextRequest): boolean {
   if (!ADMIN_TOKEN) return IS_DEV;
   const header = req.headers.get("x-admin-token") ?? "";
@@ -44,7 +42,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const creatorAddress = body.creator_address ?? DEMO_CREATOR;
+      const creatorAddress = body.creator_address ?? getCreatorAddress();
       const executeOnChain = body.execute ?? false;
 
       startRumblePoller(async (event) => {
