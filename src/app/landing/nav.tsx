@@ -34,7 +34,8 @@ export function Nav() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.04] bg-[#050505]/80 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2.5">
+        <a href="/" className="flex items-center gap-2">
+          <img src="/rumble-icon.svg" alt="" width={24} height={24} className="shrink-0" aria-hidden="true" />
           <span className="font-heading font-bold text-[15px] tracking-[-0.02em]">
             Rumble Pulse
           </span>

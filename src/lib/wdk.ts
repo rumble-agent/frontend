@@ -5,8 +5,20 @@ import type { WalletState, TxResult, BudgetConfig, BudgetTracker } from "./types
 const PRIVATE_KEY = process.env.WDK_PRIVATE_KEY ?? "";
 const EVM_PROVIDER = process.env.WDK_EVM_PROVIDER ?? "https://sepolia.drpc.org";
 const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "";
+const TIP_SPLITTER = process.env.TIP_SPLITTER_ADDRESS ?? "";
 export const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
 const USDT_DECIMALS = 6;
+
+/* ─── ABIs ─── */
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+];
+
+const TIP_SPLITTER_ABI = [
+  "function tipWithSplit(uint256 amount, address creator, address editor, address community, uint256 creatorBps, uint256 editorBps)",
+];
 
 /* ─── Dynamic Creator Address ─── */
 let creatorWallet: string = process.env.DEMO_CREATOR_ADDRESS ?? "";
@@ -122,9 +134,7 @@ export async function getWalletState(): Promise<WalletState> {
   let balance = 0;
   if (USDT_CONTRACT) {
     try {
-      const erc20 = new Contract(USDT_CONTRACT, [
-        "function balanceOf(address) view returns (uint256)",
-      ]);
+      const erc20 = new Contract(USDT_CONTRACT, ERC20_ABI);
       const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
       const provider = w.provider;
       if (!provider) throw new Error("No provider connected");
@@ -140,7 +150,7 @@ export async function getWalletState(): Promise<WalletState> {
   return { address, balance, currency: "USDT", chain: CHAIN };
 }
 
-/** Send USDT tip directly to the creator — single ERC-20 transfer */
+/** Send USDT tip — routes through TipSplitter contract if configured, otherwise direct ERC-20 transfer */
 export async function sendTip(
   amount: number,
   creatorAddress: string
@@ -161,15 +171,35 @@ export async function sendTip(
   const units = toUsdtUnits(amount);
 
   try {
-    const erc20 = new Contract(USDT_CONTRACT, [
-      "function transfer(address to, uint256 amount) returns (bool)",
-    ], w);
-    const tx = await erc20.transfer(creatorAddress, units);
+    let txHash: string;
 
-    // Wait for on-chain confirmation before updating budget
-    const receipt = await tx.wait();
-    if (!receipt || receipt.status === 0) {
-      throw new Error("Transaction reverted on-chain");
+    if (TIP_SPLITTER) {
+      // Route through TipSplitter contract
+      const erc20 = new Contract(USDT_CONTRACT, ERC20_ABI, w);
+
+      // USDT approve pattern: reset to 0 first, then set new allowance
+      const resetTx = await erc20.approve(TIP_SPLITTER, 0);
+      await resetTx.wait();
+      const approveTx = await erc20.approve(TIP_SPLITTER, units);
+      await approveTx.wait();
+
+      // 100% to creator (10000 bps), editor/community = agent wallet (receives 0%)
+      const splitter = new Contract(TIP_SPLITTER, TIP_SPLITTER_ABI, w);
+      const tx = await splitter.tipWithSplit(units, creatorAddress, w.address, w.address, 10000, 0);
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status === 0) {
+        throw new Error("TipSplitter transaction reverted on-chain");
+      }
+      txHash = tx.hash;
+    } else {
+      // Fallback: direct ERC-20 transfer
+      const erc20 = new Contract(USDT_CONTRACT, ERC20_ABI, w);
+      const tx = await erc20.transfer(creatorAddress, units);
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status === 0) {
+        throw new Error("Transaction reverted on-chain");
+      }
+      txHash = tx.hash;
     }
 
     // Only update budget after confirmed success
@@ -180,7 +210,7 @@ export async function sendTip(
 
     return [{
       success: true,
-      tx_hash: tx.hash,
+      tx_hash: txHash,
       amount,
       recipient: creatorAddress,
       chain: CHAIN,

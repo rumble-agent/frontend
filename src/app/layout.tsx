@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   title: "Rumble Pulse Agent — Autonomous AI Tipping for Rumble Creators",
   description:
     "Autonomous, event-driven tipping infrastructure for Rumble creators — powered by Tether WDK.",
+  icons: {
+    icon: "/rumble-icon.svg",
+  },
 };
 
 export default function RootLayout({
