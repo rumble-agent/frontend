@@ -58,7 +58,7 @@ function HeroVideo() {
     if (!video) return;
 
     const tryPlay = () => {
-      video.play().catch(() => {});
+      video.play().catch(() => { });
     };
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {

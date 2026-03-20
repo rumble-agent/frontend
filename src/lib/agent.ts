@@ -67,6 +67,13 @@ export function getDecisionHistory(): DecisionRecord[] {
   return [...decisionHistory].reverse();
 }
 
+/** Attach transaction results to the most recent decision (called after sendTip) */
+export function updateLastDecisionTx(transactions: { success: boolean; tx_hash: string; amount: number; recipient: string; chain: string; timestamp: number }[]) {
+  if (decisionHistory.length === 0) return;
+  const last = decisionHistory[decisionHistory.length - 1];
+  last.transactions = transactions;
+}
+
 export function getAgentStats(): AgentStats {
   return {
     total_events_evaluated: totalEventsEvaluated,

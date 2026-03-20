@@ -3,9 +3,10 @@ import { getWalletState, getBudget, updateBudgetConfig, resetBudget } from "@/li
 import { z } from "zod";
 
 const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
+const IS_DEV = process.env.NODE_ENV === "development";
 
 function checkAuth(req: NextRequest): boolean {
-  if (!ADMIN_TOKEN) return true; // no token configured = open (dev mode)
+  if (!ADMIN_TOKEN) return IS_DEV; // open in dev only, blocked in production
   const header = req.headers.get("x-admin-token") ?? "";
   return header === ADMIN_TOKEN;
 }

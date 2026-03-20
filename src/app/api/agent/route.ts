@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { evaluateEvent, getNextMockEvent } from "@/lib/agent";
-import { sendTip } from "@/lib/wdk";
+import { evaluateEvent, getNextMockEvent, updateLastDecisionTx } from "@/lib/agent";
+import { sendTip, canTip } from "@/lib/wdk";
 import { z } from "zod";
 
 /* ─── Request Validation ─── */
@@ -50,8 +50,18 @@ export async function POST(req: NextRequest) {
 
     // If agent decides to tip, execute via WDK
     if (decision.should_tip && body.execute === true) {
+      // Re-check budget before executing (guard against race conditions)
+      const budgetCheck = canTip(decision.amount);
+      if (!budgetCheck.allowed) {
+        return NextResponse.json({
+          decision: { ...decision, should_tip: false, amount: 0, reasoning: budgetCheck.reason },
+          transactions: [],
+          error: budgetCheck.reason,
+        });
+      }
       try {
         const txResults = await sendTip(decision.amount, creatorAddress);
+        updateLastDecisionTx(txResults);
         return NextResponse.json({ decision, transactions: txResults });
       } catch (err) {
         return NextResponse.json({

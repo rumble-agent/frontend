@@ -149,9 +149,9 @@ export async function getWalletState(): Promise<WalletState> {
       balance = fromUsdtUnits(BigInt(result));
     }
   } catch {
-    // If token balance fails, fall back to native ETH balance for display
-    const nativeBalance: bigint = await account.getBalance();
-    balance = Number(nativeBalance) / 1e18;
+    // Token balance query failed — return 0, don't silently show ETH as USDT
+    console.warn("USDT balance query failed, returning 0");
+    balance = 0;
   }
 
   return { address, balance, currency: "USDT", chain: CHAIN };
