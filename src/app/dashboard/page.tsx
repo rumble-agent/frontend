@@ -89,6 +89,7 @@ export default function Dashboard() {
   const [editingSplit, setEditingSplit] = useState(false);
   const [splitValues, setSplitValues] = useState({ creator: 80, editor: 10, charity: 10 });
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const logEndRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -273,6 +274,35 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+        {/* Onboarding Banner */}
+        {showOnboarding && (
+          <div className="relative mb-6 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/[0.03] p-5">
+            <button
+              onClick={() => setShowOnboarding(false)}
+              className="absolute top-3 right-3 text-zinc-600 hover:text-white transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+            </button>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="w-9 h-9 rounded-lg border border-[#00D4FF]/20 bg-[#00D4FF]/10 flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+              </div>
+              <div>
+                <h3 className="font-[family-name:var(--font-heading)] font-bold text-sm text-white mb-1.5">How this works</h3>
+                <p className="text-[13px] text-zinc-400 leading-relaxed max-w-2xl">
+                  Your agent evaluates stream events using Claude AI, scores them 0-1, and executes USDT tips onchain via Tether WDK.
+                  Click <span className="text-emerald-400 font-medium">Start Agent</span> to auto-evaluate events every 5 seconds,
+                  or <span className="text-zinc-300 font-medium">Trigger Event</span> to test with a single mock event.
+                </p>
+                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                  <span>Event → Claude Brain → Budget Check → WDK Tip</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button

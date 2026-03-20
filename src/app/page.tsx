@@ -440,7 +440,9 @@ export default function Home() {
                     </svg>
                   </a>
                   <a
-                    href="#"
+                    href="https://github.com/rumble-agent"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white transition-all"
                   >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="mr-2" aria-hidden="true">
@@ -468,7 +470,7 @@ export default function Home() {
               </div>
 
               {/* Right — Mini Agent Preview */}
-              <div className="animate-in delay-3 hidden lg:block">
+              <div className="animate-in delay-3">
                 <MiniAgentPreview />
               </div>
             </div>
@@ -478,32 +480,37 @@ export default function Home() {
         {/* ── Marquee Ticker ── */}
         <Marquee />
 
-        {/* ── How It Works — With Connectors ── */}
+        {/* ── How It Works — 3 Steps ── */}
         <section id="how-it-works" className="py-24 px-6">
           <div className="max-w-6xl mx-auto">
             <Reveal>
-              <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-12">
+              <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-4">
                 How It Works
               </p>
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-16">
+                Three steps. Fully autonomous.
+              </h2>
             </Reveal>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-0">
               {[
                 {
                   num: "01",
-                  title: "Set your rules",
-                  desc: "Define tip triggers, budget limits, and creator allowlists. Your agent follows your policy — always.",
+                  title: "Configure your agent",
+                  desc: "Set budget limits (per session, per tip), split ratios between creator/editor/community, and rate limits. Your agent never exceeds your rules.",
+                  detail: "max: 50 USDT/session · 5 USDT/tip · 30s cooldown",
                   icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[#00D4FF]" aria-hidden="true">
-                      <path d="M12 3v1m0 16v1m-8-9H3m18 0h-1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707" strokeLinecap="round" />
-                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="12" cy="12" r="3" />
                     </svg>
                   ),
                 },
                 {
                   num: "02",
-                  title: "Agent watches",
-                  desc: "The AI agent monitors Rumble streams in real-time — tracking engagement, sentiment, and events.",
+                  title: "Agent evaluates events",
+                  desc: "Stream events (viewer spikes, new subs, donations, milestones) are scored by Claude AI. Each event gets a 0-1 significance score with reasoning.",
+                  detail: "score >= 0.4 triggers a tip · sentiment analysis included",
                   icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[#00D4FF]" aria-hidden="true">
                       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
@@ -513,8 +520,9 @@ export default function Home() {
                 },
                 {
                   num: "03",
-                  title: "Tips execute onchain",
-                  desc: "USDT tips are sent via Tether WDK — fast, transparent, and fully onchain with no middleman.",
+                  title: "USDT tips execute onchain",
+                  desc: "Approved tips are split and sent as real USDT transfers via Tether WDK. Every transaction is onchain, verifiable, and non-custodial.",
+                  detail: "split: 80% creator · 10% editor · 10% community",
                   icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[#00D4FF]" aria-hidden="true">
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinejoin="round" />
@@ -533,13 +541,141 @@ export default function Home() {
                     <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold mb-3 tracking-[-0.02em]">
                       {step.title}
                     </h3>
-                    <p className="text-zinc-500 text-sm leading-relaxed">
+                    <p className="text-zinc-500 text-sm leading-relaxed mb-3">
                       {step.desc}
+                    </p>
+                    <p className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                      {step.detail}
                     </p>
                   </div>
                 </Reveal>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── Architecture Flow — The Pipeline ── */}
+        <section className="py-20 px-6 border-t border-white/[0.04]">
+          <div className="max-w-6xl mx-auto">
+            <Reveal>
+              <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-4">
+                Under the Hood
+              </p>
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-6">
+                The decision pipeline.
+              </h2>
+              <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl mb-16">
+                Every stream event passes through a 4-stage pipeline before any USDT leaves your wallet.
+                Each stage is logged, auditable, and visible in real-time on the dashboard.
+              </p>
+            </Reveal>
+
+            {/* Pipeline flow */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                {
+                  stage: "01",
+                  label: "Event Layer",
+                  title: "Stream Event",
+                  items: ["viewer_spike", "new_subscriber", "donation", "milestone", "sentiment_shift"],
+                  color: "violet",
+                  example: "viewer_count: 1,247 → 3,891",
+                },
+                {
+                  stage: "02",
+                  label: "Agent Brain",
+                  title: "Claude LLM",
+                  items: ["Significance score 0-1", "Sentiment analysis", "Context reasoning", "Rule-based fallback"],
+                  color: "amber",
+                  example: "score=0.87 → tip 2.50 USDT",
+                },
+                {
+                  stage: "03",
+                  label: "Budget Guardian",
+                  title: "Validation",
+                  items: ["Per-session cap check", "Per-tip limit check", "Rate limiter (30s)", "Split calculation"],
+                  color: "emerald",
+                  example: "✓ under cap · ✓ rate ok",
+                },
+                {
+                  stage: "04",
+                  label: "WDK Execution",
+                  title: "Onchain Tip",
+                  items: ["USDT ERC-20 transfer", "Auto-split to 3 wallets", "TX hash + confirmation", "Balance update"],
+                  color: "cyan",
+                  example: "TX 0x7a3f...e91d confirmed",
+                },
+              ].map((step, i) => (
+                <Reveal key={step.stage} delay={i + 1}>
+                  <div className="relative group">
+                    {/* Connector arrow — hidden on mobile, shown between cards on lg */}
+                    {i < 3 && (
+                      <div className="hidden lg:block absolute -right-2 top-1/2 -translate-y-1/2 z-10 text-zinc-700">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    )}
+
+                    <div className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 h-full transition-colors hover:border-white/[0.12]`}>
+                      {/* Stage header */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className={`font-[family-name:var(--font-jetbrains)] text-[10px] font-bold uppercase tracking-wider ${
+                          step.color === "violet" ? "text-violet-400" :
+                          step.color === "amber" ? "text-amber-400" :
+                          step.color === "emerald" ? "text-emerald-400" :
+                          "text-[#00D4FF]"
+                        }`}>
+                          {step.label}
+                        </span>
+                      </div>
+
+                      <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em] mb-3">
+                        {step.title}
+                      </h3>
+
+                      {/* Items */}
+                      <ul className="space-y-1.5 mb-4">
+                        {step.items.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-[12px] text-zinc-500">
+                            <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${
+                              step.color === "violet" ? "bg-violet-400/60" :
+                              step.color === "amber" ? "bg-amber-400/60" :
+                              step.color === "emerald" ? "bg-emerald-400/60" :
+                              "bg-[#00D4FF]/60"
+                            }`} />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Example output */}
+                      <div className={`font-[family-name:var(--font-jetbrains)] text-[11px] px-3 py-2 rounded-md border border-white/[0.04] bg-white/[0.02] ${
+                        step.color === "violet" ? "text-violet-400/80" :
+                        step.color === "amber" ? "text-amber-400/80" :
+                        step.color === "emerald" ? "text-emerald-400/80" :
+                        "text-[#00D4FF]/80"
+                      }`}>
+                        {step.example}
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+
+            {/* Mobile flow connector hint */}
+            <Reveal delay={1}>
+              <div className="mt-8 flex items-center justify-center gap-3 text-zinc-600 sm:hidden">
+                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Event</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Brain</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Guard</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Tip</span>
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -563,7 +699,7 @@ export default function Home() {
                   </p>
                   <div className="flex items-center gap-2 text-xs text-zinc-600 font-[family-name:var(--font-jetbrains)]">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Real-time stream — no mock data
+                    Fully auditable decision trail
                   </div>
                 </Reveal>
               </div>
@@ -621,13 +757,13 @@ export default function Home() {
                     </svg>
                   </div>
                   <p className="text-zinc-500 text-sm leading-relaxed mb-4">
-                    Auto-partition into tip pool, reserve, and gas buffer.
-                    Dynamic rebalancing based on stream performance.
+                    Every tip is auto-split between creator, editor, and community pool.
+                    Configurable ratios — your money goes exactly where you want.
                   </p>
                   <div className="flex gap-4 font-[family-name:var(--font-jetbrains)] text-[11px]">
-                    <span className="text-zinc-600">tip_pool: <span className="text-white">60%</span></span>
-                    <span className="text-zinc-600">reserve: <span className="text-white">30%</span></span>
-                    <span className="text-zinc-600">gas: <span className="text-white">10%</span></span>
+                    <span className="text-zinc-600">creator: <span className="text-white">80%</span></span>
+                    <span className="text-zinc-600">editor: <span className="text-white">10%</span></span>
+                    <span className="text-zinc-600">community: <span className="text-white">10%</span></span>
                   </div>
                 </div>
               </Reveal>
@@ -702,6 +838,7 @@ export default function Home() {
                 {[
                   { label: "WDK by Tether", sub: "Wallet SDK" },
                   { label: "OpenClaw", sub: "Agent Framework" },
+                  { label: "Claude AI", sub: "LLM Reasoning" },
                   { label: "USDT", sub: "Stablecoin" },
                   { label: "TypeScript", sub: "Language" },
                 ].map((item) => (
@@ -750,11 +887,10 @@ export default function Home() {
       {/* ── Footer ── */}
       <footer className="border-t border-white/[0.04] py-6 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-zinc-600">
-          <span>Rumble Pulse Agent</span>
+          <span>Rumble Pulse Agent — Built for Tether WDK Hackathon</span>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">GitHub</a>
-            <a href="#" className="hover:text-white transition-colors">Docs</a>
-            <a href="#" className="hover:text-white transition-colors">Twitter</a>
+            <a href="https://github.com/rumble-agent" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
+            <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
           </div>
         </div>
       </footer>
