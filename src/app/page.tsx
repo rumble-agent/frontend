@@ -501,7 +501,7 @@ export default function Home() {
                 {
                   num: "02",
                   title: "Agent evaluates events",
-                  desc: "Stream events (viewer spikes, new subs, donations, milestones) are scored by Claude AI. Each event gets a 0-1 significance score with reasoning.",
+                  desc: "Stream events (viewer spikes, new subs, donations, milestones) are scored by Llama 4 via Groq. Each event gets a 0-1 significance score with reasoning.",
                   detail: "score >= 0.4 triggers a tip · sentiment analysis included",
                   icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[#00D4FF]" aria-hidden="true">
@@ -830,7 +830,7 @@ export default function Home() {
                 {[
                   { label: "WDK by Tether", sub: "Wallet SDK" },
                   { label: "OpenClaw", sub: "Agent Framework" },
-                  { label: "Claude AI", sub: "LLM Reasoning" },
+                  { label: "Llama 4", sub: "LLM Reasoning" },
                   { label: "USDT", sub: "Stablecoin" },
                   { label: "TypeScript", sub: "Language" },
                 ].map((item) => (

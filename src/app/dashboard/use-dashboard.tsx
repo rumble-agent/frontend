@@ -133,7 +133,7 @@ function useDashboardState() {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ execute: false, creator_address: creatorAddress || undefined }),
+        body: JSON.stringify({ execute: true, creator_address: creatorAddress || undefined }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -171,7 +171,7 @@ function useDashboardState() {
       const res = await fetch("/api/rumble", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, execute: false, creator_address: creatorAddress || undefined }),
+        body: JSON.stringify({ action, execute: true, creator_address: creatorAddress || undefined }),
       });
       if (!res.ok) {
         const err = await res.json();
