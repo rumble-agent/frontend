@@ -9,7 +9,7 @@ type LogListener = (entry: AgentLogEntry) => void;
 const listeners: Set<LogListener> = new Set();
 const logHistory: AgentLogEntry[] = [];
 
-function emit(type: AgentLogEntry["type"], message: string): AgentLogEntry {
+export function emit(type: AgentLogEntry["type"], message: string): AgentLogEntry {
   const entry: AgentLogEntry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     timestamp: Date.now(),

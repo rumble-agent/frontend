@@ -6,7 +6,7 @@ import type { WalletState, TipSplit, TxResult, BudgetConfig, BudgetTracker } fro
 /* ─── WDK Singleton ─── */
 const SEED_PHRASE = process.env.WDK_SEED_PHRASE ?? "";
 const EVM_PROVIDER = process.env.WDK_EVM_PROVIDER ?? "https://sepolia.drpc.org";
-const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const USDT_CONTRACT = process.env.USDT_CONTRACT_ADDRESS ?? "";
 export const CHAIN = process.env.WDK_CHAIN ?? "ethereum-sepolia";
 const USDT_DECIMALS = 6;
 

@@ -79,6 +79,12 @@ const EVENT_LABELS: Record<string, string> = {
   sentiment_shift: "Sentiment",
 };
 
+interface RumbleStatus {
+  configured: boolean;
+  polling: boolean;
+  url_set: boolean;
+}
+
 export default function Dashboard() {
   const [logs, setLogs] = useState<AgentLogEntry[]>([]);
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -92,6 +98,8 @@ export default function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [triggerLoading, setTriggerLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [rumble, setRumble] = useState<RumbleStatus | null>(null);
+  const [rumbleLoading, setRumbleLoading] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -187,11 +195,25 @@ export default function Dashboard() {
     return () => container.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Fetch wallet + stats on mount
+  // Fetch Rumble status
+  const fetchRumbleStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/rumble");
+      if (res.ok) {
+        const data = await res.json();
+        setRumble(data);
+      }
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
+  // Fetch wallet + stats + rumble status on mount
   useEffect(() => {
     fetchWallet();
     fetchStats();
-  }, [fetchWallet, fetchStats]);
+    fetchRumbleStatus();
+  }, [fetchWallet, fetchStats, fetchRumbleStatus]);
 
   // Trigger single event (POST with auth)
   const triggerEvent = useCallback(async () => {
@@ -233,6 +255,31 @@ export default function Dashboard() {
       setIsRunning(true);
       triggerEvent();
       intervalRef.current = setInterval(triggerEvent, 5000);
+    }
+  };
+
+  // Toggle Rumble live poller
+  const toggleRumble = async () => {
+    setRumbleLoading(true);
+    setActionError(null);
+    try {
+      const action = rumble?.polling ? "stop" : "start";
+      const res = await fetch("/api/rumble", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, execute: false }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setActionError(err.error ?? "Rumble action failed");
+        return;
+      }
+      const data = await res.json();
+      setRumble({ configured: data.configured, polling: data.polling, url_set: data.url_set });
+    } catch {
+      setActionError("Network error");
+    } finally {
+      setRumbleLoading(false);
     }
   };
 
@@ -357,12 +404,13 @@ export default function Dashboard() {
               <div>
                 <h3 className="font-[family-name:var(--font-heading)] font-bold text-sm text-white mb-1.5">How this works</h3>
                 <p className="text-[13px] text-zinc-400 leading-relaxed max-w-2xl">
-                  Your agent evaluates stream events using Claude AI, scores them 0-1, and executes USDT tips onchain via Tether WDK.
-                  Click <span className="text-emerald-400 font-medium">Start Agent</span> to auto-evaluate events every 5 seconds,
-                  or <span className="text-zinc-300 font-medium">Trigger Event</span> to test with a single mock event.
+                  Your agent monitors Rumble live streams for engagement events (viewer spikes, rants, new subs, milestones),
+                  evaluates them with Claude AI, and executes USDT tips onchain via Tether WDK.
+                  Click <span className="text-violet-400 font-medium">Start Rumble</span> to connect to your live stream,
+                  or <span className="text-zinc-300 font-medium">Trigger Event</span> to test with a mock event.
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
-                  <span>Event → Claude Brain → Budget Check → WDK Tip</span>
+                  <span>Rumble Stream → Event Detection → Claude Brain → Budget Check → WDK Tip</span>
                 </div>
               </div>
             </div>
@@ -398,6 +446,19 @@ export default function Dashboard() {
           >
             {triggerLoading ? "Evaluating..." : "Trigger Event"}
           </button>
+          {rumble?.configured && (
+            <button
+              onClick={toggleRumble}
+              disabled={rumbleLoading}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                rumble.polling
+                  ? "bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20"
+                  : "bg-violet-500/10 text-violet-400/60 border border-violet-500/10 hover:border-violet-500/20 hover:text-violet-400"
+              } disabled:opacity-40`}
+            >
+              {rumbleLoading ? "..." : rumble.polling ? "Stop Rumble" : "Start Rumble"}
+            </button>
+          )}
           <button
             onClick={resetBudget}
             className="px-4 py-2 text-sm font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white transition-all"
@@ -468,6 +529,43 @@ export default function Dashboard() {
                   <div className="h-3 w-48 rounded bg-white/[0.04]" />
                 </div>
               )}
+            </div>
+
+            {/* Rumble Connection */}
+            <div className={`rounded-xl border p-5 ${
+              rumble?.polling
+                ? "border-violet-500/20 bg-violet-500/[0.03]"
+                : "border-white/[0.06] bg-white/[0.02]"
+            }`}>
+              <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Rumble Stream</p>
+              <div className="font-[family-name:var(--font-jetbrains)] text-[12px]">
+                {rumble?.configured ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-1.5 h-1.5 rounded-full ${rumble.polling ? "bg-violet-400 animate-pulse" : "bg-zinc-600"}`} />
+                      <span className={rumble.polling ? "text-violet-400" : "text-zinc-500"}>
+                        {rumble.polling ? "Polling live stream" : "Ready to connect"}
+                      </span>
+                    </div>
+                    <p className="text-zinc-600 text-[11px]">
+                      {rumble.polling
+                        ? "Detecting viewer spikes, rants, subs, and milestones from Rumble"
+                        : "Click \"Start Rumble\" to poll your live stream"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span className="text-amber-400/80">Not configured</span>
+                    </div>
+                    <p className="text-zinc-600 text-[11px]">
+                      Set <span className="text-zinc-500">RUMBLE_API_URL</span> in .env.local.
+                      Get your URL at rumble.com/account/livestream-api
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Budget */}
