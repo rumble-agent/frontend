@@ -3,6 +3,7 @@ import { createGroq } from "@ai-sdk/groq";
 import { z } from "zod";
 import type { StreamEvent, AgentDecision, AgentLogEntry, DecisionRecord, AgentStats } from "./types";
 import { canTip, getBudget, CHAIN } from "./wdk";
+export { getNextMockEvent } from "./mock-events";
 
 /* ─── Log Store (in-memory, streamed via SSE) ─── */
 type LogListener = (entry: AgentLogEntry) => void;
@@ -67,11 +68,9 @@ export function getDecisionHistory(): DecisionRecord[] {
   return [...decisionHistory].reverse();
 }
 
-/** Attach transaction results to the most recent decision (called after sendTip) */
 export function updateLastDecisionTx(transactions: { success: boolean; tx_hash: string; amount: number; recipient: string; chain: string; timestamp: number }[]) {
   if (decisionHistory.length === 0) return;
-  const last = decisionHistory[decisionHistory.length - 1];
-  last.transactions = transactions;
+  decisionHistory[decisionHistory.length - 1].transactions = transactions;
 }
 
 export function getAgentStats(): AgentStats {
@@ -95,13 +94,16 @@ const tipDecisionSchema = z.object({
   reasoning: z.string().describe("1-2 sentence explanation of the decision"),
 });
 
+/* ─── Cached Groq Client ─── */
+const groq = createGroq();
+
 /* ─── LLM Agent Evaluation ─── */
 async function evaluateWithLLM(
   event: StreamEvent,
   budget: { remaining: number; max_per_tip: number; spent_this_session: number; max_per_session: number }
 ): Promise<z.infer<typeof tipDecisionSchema>> {
   const { object } = await generateObject({
-    model: createGroq()("meta-llama/llama-4-scout-17b-16e-instruct"),
+    model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
     schema: tipDecisionSchema,
     prompt: `You are an autonomous tipping agent for Rumble, a live streaming platform. You monitor stream events in real-time and decide whether creators deserve a tip based on engagement signals.
 
@@ -137,37 +139,44 @@ Respond with your decision.`,
 
 /* ─── Rule-Based Fallback ─── */
 function scoreEventFallback(event: StreamEvent): number {
-  let score = 0;
   switch (event.type) {
     case "viewer_spike": {
       const prev = event.data.previous_viewer_count ?? 0;
       const curr = event.data.viewer_count ?? 0;
-      if (prev > 0) score = Math.min((curr / prev) / 5, 1);
-      break;
+      return prev > 0 ? Math.round(Math.min((curr / prev) / 5, 1) * 100) / 100 : 0;
     }
-    case "new_subscriber": score = 0.6; break;
-    case "donation": score = 0.7; break;
-    case "milestone": score = 0.85; break;
+    case "new_subscriber": return 0.6;
+    case "donation": return 0.7;
+    case "milestone": return 0.85;
     case "sentiment_shift": {
       const s = event.data.sentiment_score ?? 0;
-      score = s > 0.7 ? s : 0;
-      break;
+      return s > 0.7 ? Math.round(s * 100) / 100 : 0;
     }
+    default: return 0;
   }
-  return Math.round(score * 100) / 100;
 }
 
 function calculateTipAmount(score: number): number {
   const budget = getBudget();
   const maxTip = Math.min(budget.config.max_per_tip, budget.remaining);
-  if (maxTip < 0.5) return 0; // Can't tip below minimum
-  const amount = Number((score * maxTip).toFixed(2));
-  return Math.max(0.5, Math.min(amount, maxTip));
+  if (maxTip < 0.5) return 0;
+  return Math.max(0.5, Math.min(Number((score * maxTip).toFixed(2)), maxTip));
+}
+
+function ruleBasedDecision(event: StreamEvent, label: string): z.infer<typeof tipDecisionSchema> {
+  const score = scoreEventFallback(event);
+  const amount = score >= 0.4 ? calculateTipAmount(score) : 0;
+  return {
+    should_tip: score >= 0.4 && amount > 0,
+    amount,
+    score,
+    reasoning: `[${label}] Event ${event.type} scored ${score}`,
+  };
 }
 
 /* ─── LLM Rate Limiter ─── */
 let lastLLMCall = 0;
-const LLM_MIN_INTERVAL_MS = 2000; // minimum 2s between LLM calls
+const LLM_MIN_INTERVAL_MS = 2000;
 
 function canCallLLM(): boolean {
   return Date.now() - lastLLMCall >= LLM_MIN_INTERVAL_MS;
@@ -196,7 +205,6 @@ export async function evaluateEvent(
   let decision: z.infer<typeof tipDecisionSchema>;
   let usedLLM = false;
 
-  // Try LLM first, fall back to rules
   if (hasValidApiKey() && canCallLLM()) {
     try {
       emit("llm", "Reasoning with Groq LLM...");
@@ -206,25 +214,11 @@ export async function evaluateEvent(
       emit("llm", `LLM: score=${decision.score} tip=${decision.should_tip ? `${decision.amount} USDT` : "skip"}`);
     } catch (err) {
       emit("wrn", `LLM failed: ${err instanceof Error ? err.message : "Unknown error"}. Using rule-based fallback.`);
-      const score = scoreEventFallback(event);
-      const amount = score >= 0.4 ? calculateTipAmount(score) : 0;
-      decision = {
-        should_tip: score >= 0.4 && amount > 0,
-        amount,
-        score,
-        reasoning: `[Fallback] Event ${event.type} scored ${score}`,
-      };
+      decision = ruleBasedDecision(event, "Fallback");
     }
   } else {
     emit("sys", "No API key configured. Using rule-based scoring.");
-    const score = scoreEventFallback(event);
-    const amount = score >= 0.4 ? calculateTipAmount(score) : 0;
-    decision = {
-      should_tip: score >= 0.4 && amount > 0,
-      amount,
-      score,
-      reasoning: `[Rule-based] Event ${event.type} scored ${score}`,
-    };
+    decision = ruleBasedDecision(event, "Rule-based");
   }
 
   // Clamp amount to budget limits
@@ -239,94 +233,35 @@ export async function evaluateEvent(
     const budgetCheck = canTip(decision.amount);
     if (!budgetCheck.allowed) {
       emit("wrn", `Budget blocked: ${budgetCheck.reason}`);
-      const blockedDecision: AgentDecision = {
-        should_tip: false,
-        amount: 0,
-        score: decision.score,
+      const blocked: AgentDecision = {
+        should_tip: false, amount: 0, score: decision.score,
         reasoning: budgetCheck.reason ?? "Budget limit reached",
-        event,
-        timestamp: Date.now(),
+        event, timestamp: Date.now(),
       };
-      recordDecision(blockedDecision, [], usedLLM);
-      return blockedDecision;
+      recordDecision(blocked, [], usedLLM);
+      return blocked;
     }
   }
 
   if (!decision.should_tip) {
     emit("llm", `Skipped: ${decision.reasoning}`);
-    const skipDecision: AgentDecision = {
-      should_tip: false,
-      amount: 0,
-      score: decision.score,
+    const skip: AgentDecision = {
+      should_tip: false, amount: 0, score: decision.score,
       reasoning: decision.reasoning,
-      event,
-      timestamp: Date.now(),
+      event, timestamp: Date.now(),
     };
-    recordDecision(skipDecision, [], usedLLM);
-    return skipDecision;
+    recordDecision(skip, [], usedLLM);
+    return skip;
   }
 
   emit(usedLLM ? "act" : "llm", `→ Tip ${decision.amount} USDT to ${creatorAddress.slice(0, 6)}...${creatorAddress.slice(-4)} | ${decision.reasoning}`);
   emit("inf", `Balance: ${budget.remaining.toFixed(2)} USDT remaining | Budget: ${((budget.spent_this_session / budget.config.max_per_session) * 100).toFixed(0)}% consumed`);
 
-  const tipDecision: AgentDecision = {
-    should_tip: true,
-    amount: decision.amount,
-    score: decision.score,
+  const tip: AgentDecision = {
+    should_tip: true, amount: decision.amount, score: decision.score,
     reasoning: decision.reasoning,
-    event,
-    timestamp: Date.now(),
+    event, timestamp: Date.now(),
   };
-
-  recordDecision(tipDecision, [], usedLLM);
-  return tipDecision;
-}
-
-/* ─── Mock Event Simulator (for demo) ─── */
-const MOCK_EVENTS: StreamEvent[] = [
-  {
-    type: "viewer_spike",
-    timestamp: Date.now(),
-    data: { viewer_count: 3891, previous_viewer_count: 1247, sentiment: "positive", sentiment_score: 0.87 },
-  },
-  {
-    type: "new_subscriber",
-    timestamp: Date.now(),
-    data: { subscriber_id: "user_8172", sentiment: "positive", sentiment_score: 0.72 },
-  },
-  {
-    type: "milestone",
-    timestamp: Date.now(),
-    data: { milestone_type: "10k_views", sentiment: "positive", sentiment_score: 0.95 },
-  },
-  {
-    type: "sentiment_shift",
-    timestamp: Date.now(),
-    data: { sentiment: "positive", sentiment_score: 0.91 },
-  },
-  {
-    type: "viewer_spike",
-    timestamp: Date.now(),
-    data: { viewer_count: 8420, previous_viewer_count: 3891, sentiment: "positive", sentiment_score: 0.88 },
-  },
-  {
-    type: "donation",
-    timestamp: Date.now(),
-    data: { sentiment: "positive", sentiment_score: 0.78 },
-  },
-  {
-    type: "sentiment_shift",
-    timestamp: Date.now(),
-    data: { sentiment: "negative", sentiment_score: 0.3 },
-  },
-  {
-    type: "new_subscriber",
-    timestamp: Date.now(),
-    data: { subscriber_id: "user_2941", sentiment: "neutral", sentiment_score: 0.5 },
-  },
-];
-
-export function getNextMockEvent(): StreamEvent {
-  const event = MOCK_EVENTS[Math.floor(Math.random() * MOCK_EVENTS.length)];
-  return { ...event, timestamp: Date.now() };
+  recordDecision(tip, [], usedLLM);
+  return tip;
 }
