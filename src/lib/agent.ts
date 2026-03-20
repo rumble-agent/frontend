@@ -170,15 +170,12 @@ let lastLLMCall = 0;
 const LLM_MIN_INTERVAL_MS = 2000; // minimum 2s between LLM calls
 
 function canCallLLM(): boolean {
-  const now = Date.now();
-  if (now - lastLLMCall < LLM_MIN_INTERVAL_MS) return false;
-  return true;
+  return Date.now() - lastLLMCall >= LLM_MIN_INTERVAL_MS;
 }
 
 function hasValidApiKey(): boolean {
   const key = process.env.GROQ_API_KEY;
-  if (!key || key.length < 20 || key.includes("your-") || key === "gsk_xxx") return false;
-  return true;
+  return !!(key && key.length >= 20 && !key.includes("your-") && key !== "gsk_xxx");
 }
 
 /* ─── Agent Decision Engine ─── */
@@ -246,7 +243,7 @@ export async function evaluateEvent(
         should_tip: false,
         amount: 0,
         score: decision.score,
-        reasoning: budgetCheck.reason!,
+        reasoning: budgetCheck.reason ?? "Budget limit reached",
         event,
         timestamp: Date.now(),
       };

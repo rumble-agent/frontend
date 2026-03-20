@@ -349,11 +349,11 @@ export default function Dashboard() {
       <header className="border-b border-white/[0.04] bg-[#050505]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/" className="font-[family-name:var(--font-heading)] font-bold text-[15px] tracking-[-0.02em] text-zinc-400 hover:text-white transition-colors">
+            <a href="/" className="font-heading font-bold text-[15px] tracking-[-0.02em] text-zinc-400 hover:text-white transition-colors">
               Rumble Pulse
             </a>
             <span className="text-zinc-700">/</span>
-            <span className="font-[family-name:var(--font-heading)] font-bold text-[15px] tracking-[-0.02em]">
+            <span className="font-heading font-bold text-[15px] tracking-[-0.02em]">
               {isSetup ? "Setup" : "Dashboard"}
             </span>
           </div>
@@ -362,7 +362,7 @@ export default function Dashboard() {
               <span className={`w-1.5 h-1.5 rounded-full ${
                 isRunning || rumble?.polling ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"
               }`} />
-              <span className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-500">
+              <span className="font-mono text-[11px] text-zinc-500">
                 {isRunning && rumble?.polling
                   ? "Agent + Rumble"
                   : isRunning
@@ -379,7 +379,7 @@ export default function Dashboard() {
       {/* ── Error banner ── */}
       {actionError && (
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 mt-4">
-          <div className="px-4 py-2.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] text-red-400 text-[13px] font-[family-name:var(--font-jetbrains)] flex items-center justify-between">
+          <div className="px-4 py-2.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] text-red-400 text-[13px] font-mono flex items-center justify-between">
             <span>{actionError}</span>
             <button onClick={() => setActionError(null)} aria-label="Dismiss error" className="text-red-400/60 hover:text-red-400 ml-4 shrink-0">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
@@ -395,11 +395,11 @@ export default function Dashboard() {
         <div className="max-w-lg mx-auto px-6 py-16 sm:py-24">
           {/* Title */}
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[11px] text-zinc-500 font-[family-name:var(--font-jetbrains)] mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[11px] text-zinc-500 font-mono mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00D4FF]" />
               Powered by Tether WDK
             </div>
-            <h1 className="font-[family-name:var(--font-heading)] text-[28px] font-bold tracking-[-0.02em] mb-2">
+            <h1 className="font-heading text-[28px] font-bold tracking-[-0.02em] mb-2">
               Set up your tipping agent
             </h1>
             <p className="text-zinc-500 text-[14px]">
@@ -429,7 +429,7 @@ export default function Dashboard() {
                 </div>
                 <h2 className="text-[14px] font-semibold">Agent Wallet</h2>
               </div>
-              <div className="ml-9 font-[family-name:var(--font-jetbrains)] text-[12px]">
+              <div className="ml-9 font-mono text-[12px]">
                 {walletError ? (
                   <div>
                     <p className="text-red-400">{walletError}</p>
@@ -476,14 +476,14 @@ export default function Dashboard() {
                   placeholder="0x..."
                   value={creatorDraft}
                   onChange={(e) => setCreatorDraft(e.target.value)}
-                  className={`w-full bg-white/[0.04] border rounded-lg px-3 py-2.5 text-[13px] font-[family-name:var(--font-jetbrains)] text-white placeholder-zinc-700 outline-none focus:border-[#00D4FF]/40 transition-colors ${
+                  className={`w-full bg-white/[0.04] border rounded-lg px-3 py-2.5 text-[13px] font-mono text-white placeholder-zinc-700 outline-none focus:border-[#00D4FF]/40 transition-colors ${
                     creatorDraft && !isValidAddress(creatorDraft)
                       ? "border-red-500/30"
                       : "border-white/[0.08]"
                   }`}
                 />
                 {creatorDraft && !isValidAddress(creatorDraft) && (
-                  <p className="text-red-400 text-[10px] mt-1.5 font-[family-name:var(--font-jetbrains)]">Invalid Ethereum address</p>
+                  <p className="text-red-400 text-[10px] mt-1.5 font-mono">Invalid Ethereum address</p>
                 )}
               </div>
             </div>
@@ -494,7 +494,7 @@ export default function Dashboard() {
                 <div className="w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center text-[11px] font-bold text-zinc-500">3</div>
                 <h2 className="text-[14px] font-semibold text-zinc-400">Budget & Limits</h2>
               </div>
-              <div className="ml-9 font-[family-name:var(--font-jetbrains)] text-[12px]">
+              <div className="ml-9 font-mono text-[12px]">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-zinc-500">
                   <span>{maxSession} USDT/session</span>
                   <span>{budget?.config.max_per_tip ?? 5} USDT/tip</span>
@@ -513,7 +513,7 @@ export default function Dashboard() {
           >
             {creatorSaving ? "Saving..." : "Continue to Dashboard"}
           </button>
-          <p className="text-center text-zinc-700 text-[11px] mt-3 font-[family-name:var(--font-jetbrains)]">
+          <p className="text-center text-zinc-700 text-[11px] mt-3 font-mono">
             You can change all settings from the dashboard later.
           </p>
         </div>
@@ -588,21 +588,21 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
               <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Events</p>
-              <p className="text-xl font-bold font-[family-name:var(--font-jetbrains)] text-white mt-0.5">{s?.total_events_evaluated ?? 0}</p>
+              <p className="text-xl font-bold font-mono text-white mt-0.5">{s?.total_events_evaluated ?? 0}</p>
             </div>
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
               <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Tips Sent</p>
-              <p className="text-xl font-bold font-[family-name:var(--font-jetbrains)] text-emerald-400 mt-0.5">{s?.total_tips_sent ?? 0}</p>
+              <p className="text-xl font-bold font-mono text-emerald-400 mt-0.5">{s?.total_tips_sent ?? 0}</p>
             </div>
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
               <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Total Tipped</p>
-              <p className="text-xl font-bold font-[family-name:var(--font-jetbrains)] text-[#00D4FF] mt-0.5">
+              <p className="text-xl font-bold font-mono text-[#00D4FF] mt-0.5">
                 {s?.total_amount_tipped ?? 0} <span className="text-xs text-zinc-600">USDT</span>
               </p>
             </div>
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
               <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Avg Score</p>
-              <p className="text-xl font-bold font-[family-name:var(--font-jetbrains)] text-amber-400 mt-0.5">{s?.average_score ?? 0}</p>
+              <p className="text-xl font-bold font-mono text-amber-400 mt-0.5">{s?.average_score ?? 0}</p>
             </div>
           </div>
 
@@ -683,7 +683,7 @@ export default function Dashboard() {
                             >
                               <div className="flex items-center justify-between mb-1.5">
                                 <div className="flex items-center gap-2">
-                                  <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium font-[family-name:var(--font-jetbrains)] ${
+                                  <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium font-mono ${
                                     record.decision.should_tip
                                       ? "bg-emerald-500/10 text-emerald-400"
                                       : "bg-zinc-800 text-zinc-500"
@@ -694,7 +694,7 @@ export default function Dashboard() {
                                     {EVENT_LABELS[record.decision.event.type] ?? record.decision.event.type}
                                   </span>
                                   {record.usedLLM && (
-                                    <span className="text-amber-400/50 text-[9px] uppercase tracking-wider font-[family-name:var(--font-jetbrains)]">LLM</span>
+                                    <span className="text-amber-400/50 text-[9px] uppercase tracking-wider font-mono">LLM</span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -707,14 +707,14 @@ export default function Dashboard() {
                                         style={{ width: `${record.decision.score * 100}%` }}
                                       />
                                     </div>
-                                    <span className="text-zinc-500 text-[11px] font-[family-name:var(--font-jetbrains)]">{record.decision.score}</span>
+                                    <span className="text-zinc-500 text-[11px] font-mono">{record.decision.score}</span>
                                   </div>
-                                  <span className="text-zinc-700 text-[10px] font-[family-name:var(--font-jetbrains)]">
+                                  <span className="text-zinc-700 text-[10px] font-mono">
                                     {new Date(record.timestamp).toLocaleTimeString("en-US", { hour12: false })}
                                   </span>
                                 </div>
                               </div>
-                              <p className="text-zinc-500 text-[11px] leading-relaxed font-[family-name:var(--font-jetbrains)]">
+                              <p className="text-zinc-500 text-[11px] leading-relaxed font-mono">
                                 {record.decision.reasoning}
                               </p>
                             </div>
@@ -725,12 +725,12 @@ export default function Dashboard() {
                   ) : (
                     <div id="panel-log" role="tabpanel" aria-labelledby="tab-log" className="p-5">
                       {logs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-zinc-600 font-[family-name:var(--font-jetbrains)] text-[13px]">
+                        <div className="flex flex-col items-center justify-center py-16 text-zinc-600 font-mono text-[13px]">
                           <p><span className="text-zinc-700">&gt;</span> Waiting for events...</p>
                           <p className="text-zinc-700 text-[11px] mt-1">Start the agent to see log output.</p>
                         </div>
                       ) : (
-                        <div className="font-[family-name:var(--font-jetbrains)] text-[13px] leading-6 space-y-0">
+                        <div className="font-mono text-[13px] leading-6 space-y-0">
                           {logs.map((log) => (
                             <div key={log.id} className={`flex gap-3 ${LOG_COLORS[log.type] || "text-zinc-500"}`}>
                               <span className="text-zinc-700 shrink-0 select-none text-[11px] mt-[2px]">
@@ -802,12 +802,12 @@ export default function Dashboard() {
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
                 <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Wallet</p>
                 {walletError ? (
-                  <div className="font-[family-name:var(--font-jetbrains)] text-[12px] text-red-400">
+                  <div className="font-mono text-[12px] text-red-400">
                     {walletError}
                     <button onClick={fetchWallet} className="block mt-2 text-zinc-500 hover:text-white underline">Retry</button>
                   </div>
                 ) : wallet ? (
-                  <div className="font-[family-name:var(--font-jetbrains)]">
+                  <div className="font-mono">
                     <div className="text-xl font-bold text-white">
                       {wallet.wallet.balance.toFixed(2)} <span className="text-sm text-zinc-500">{wallet.wallet.currency}</span>
                     </div>
@@ -851,7 +851,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 {editingCreator ? (
-                  <div className="font-[family-name:var(--font-jetbrains)] text-[12px]">
+                  <div className="font-mono text-[12px]">
                     <input
                       type="text"
                       placeholder="0x..."
@@ -867,7 +867,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 ) : (
-                  <div className="font-[family-name:var(--font-jetbrains)] text-[12px]">
+                  <div className="font-mono text-[12px]">
                     <div className="text-[#00D4FF] truncate" title={creatorAddress}>{creatorAddress}</div>
                     <p className="text-zinc-600 text-[11px] mt-1">Tips go to this address</p>
                   </div>
@@ -877,7 +877,7 @@ export default function Dashboard() {
               {/* Budget */}
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
                 <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Budget</p>
-                <div className="font-[family-name:var(--font-jetbrains)]">
+                <div className="font-mono">
                   <div className="flex justify-between text-[13px] mb-2">
                     <span className="text-zinc-400">{spent.toFixed(2)} / {maxSession} USDT</span>
                     <span className="text-zinc-600">{spentPercent.toFixed(0)}%</span>
@@ -903,7 +903,7 @@ export default function Dashboard() {
                   rumble.polling ? "border-violet-500/20 bg-violet-500/[0.03]" : "border-white/[0.06] bg-white/[0.02]"
                 }`}>
                   <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Rumble</p>
-                  <div className="font-[family-name:var(--font-jetbrains)] text-[12px]">
+                  <div className="font-mono text-[12px]">
                     {rumble.configured ? (
                       <div className="flex items-center gap-2">
                         <span className={`w-1.5 h-1.5 rounded-full ${rumble.polling ? "bg-violet-400 animate-pulse" : "bg-zinc-600"}`} />

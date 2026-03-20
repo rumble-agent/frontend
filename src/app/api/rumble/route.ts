@@ -2,20 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isRumbleConfigured, getRumbleStatus, startRumblePoller, stopRumblePoller } from "@/lib/rumble";
 import { evaluateEvent, updateLastDecisionTx } from "@/lib/agent";
 import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
-
-/* ─── Auth ─── */
-const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
-const IS_DEV = process.env.NODE_ENV === "development";
-function checkAuth(req: NextRequest): boolean {
-  if (!ADMIN_TOKEN) return IS_DEV;
-  const header = req.headers.get("x-admin-token") ?? "";
-  if (header.length !== ADMIN_TOKEN.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < header.length; i++) {
-    mismatch |= header.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
+import { checkAuth } from "@/lib/auth";
 
 /* GET /api/rumble — Check Rumble integration status */
 export async function GET() {

@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateEvent, getNextMockEvent, updateLastDecisionTx } from "@/lib/agent";
 import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
+import { checkAuth } from "@/lib/auth";
 import { z } from "zod";
-
-/* ─── Auth ─── */
-const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
-const IS_DEV = process.env.NODE_ENV === "development";
-
-function checkAuth(req: NextRequest): boolean {
-  if (!ADMIN_TOKEN) return IS_DEV;
-  const header = req.headers.get("x-admin-token") ?? "";
-  if (header.length !== ADMIN_TOKEN.length) return false;
-  // Constant-time comparison
-  let mismatch = 0;
-  for (let i = 0; i < header.length; i++) {
-    mismatch |= header.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
 
 /* ─── Request Validation ─── */
 const EventSchema = z.object({

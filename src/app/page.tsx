@@ -152,18 +152,18 @@ function MiniAgentPreview() {
           <div className="w-2 h-2 rounded-full bg-zinc-800" />
           <div className="w-2 h-2 rounded-full bg-zinc-800" />
         </div>
-        <span className="ml-2 font-[family-name:var(--font-jetbrains)] text-[10px] text-zinc-600">
+        <span className="ml-2 font-mono text-[10px] text-zinc-600">
           rumble-pulse-agent
         </span>
         <div className="ml-auto flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-[family-name:var(--font-jetbrains)] text-[10px] text-zinc-600">
+          <span className="font-mono text-[10px] text-zinc-600">
             live
           </span>
         </div>
       </div>
       {/* Log lines */}
-      <div className="p-4 font-[family-name:var(--font-jetbrains)] text-[11px] leading-5 min-h-[180px]">
+      <div className="p-4 font-mono text-[11px] leading-5 min-h-[180px]">
         {PREVIEW_LINES.slice(0, lines).map((l, i) => (
           <div key={i} className={`log-line flex gap-2 ${PREVIEW_COLORS[l.type] || "text-zinc-500"}`}>
             <span className="text-zinc-700 shrink-0 select-none">›</span>
@@ -266,7 +266,7 @@ function AgentLog() {
   return (
     <div
       ref={containerRef}
-      className="font-[family-name:var(--font-jetbrains)] text-[13px] leading-6 overflow-x-auto"
+      className="font-mono text-[13px] leading-6 overflow-x-auto"
       role="log"
       aria-label="Agent activity log"
     >
@@ -307,7 +307,7 @@ function Marquee() {
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
           <span
             key={i}
-            className="flex items-center gap-2 font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600 whitespace-nowrap"
+            className="flex items-center gap-2 font-mono text-[11px] text-zinc-600 whitespace-nowrap"
           >
             <span className="w-1 h-1 rounded-full bg-[#00D4FF]/40" />
             {item}
@@ -355,7 +355,7 @@ export default function Home() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.04] bg-[#050505]/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
-            <span className="font-[family-name:var(--font-heading)] font-bold text-[15px] tracking-[-0.02em]">
+            <span className="font-heading font-bold text-[15px] tracking-[-0.02em]">
               Rumble Pulse
             </span>
           </a>
@@ -409,7 +409,7 @@ export default function Home() {
                   Autonomous Tipping Agent
                 </p>
 
-                <h1 className="animate-in delay-1 font-[family-name:var(--font-heading)] text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-[-0.04em] leading-[0.9] uppercase">
+                <h1 className="animate-in delay-1 font-heading text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-[-0.04em] leading-[0.9] uppercase">
                   Let your agent
                   <br />
                   <span className="text-[#00D4FF]">tip for you.</span>
@@ -447,15 +447,15 @@ export default function Home() {
                 {/* Inline stats */}
                 <div className="animate-in delay-4 mt-12 flex flex-wrap gap-x-10 gap-y-3 text-sm">
                   <div>
-                    <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">24/7</span>
+                    <span className="font-mono text-[#00D4FF] font-medium">24/7</span>
                     <span className="text-zinc-600 ml-2">autonomous</span>
                   </div>
                   <div>
-                    <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">&lt;2s</span>
+                    <span className="font-mono text-[#00D4FF] font-medium">&lt;2s</span>
                     <span className="text-zinc-600 ml-2">tip latency</span>
                   </div>
                   <div>
-                    <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] font-medium">100%</span>
+                    <span className="font-mono text-[#00D4FF] font-medium">100%</span>
                     <span className="text-zinc-600 ml-2">onchain</span>
                   </div>
                 </div>
@@ -479,7 +479,7 @@ export default function Home() {
               <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-4">
                 How It Works
               </p>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-16">
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-16">
                 Three steps. Fully autonomous.
               </h2>
             </Reveal>
@@ -528,15 +528,15 @@ export default function Home() {
                       <div className="w-10 h-10 rounded-lg border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
                         {step.icon}
                       </div>
-                      <span className="font-[family-name:var(--font-jetbrains)] text-[#00D4FF] text-xs">{step.num}</span>
+                      <span className="font-mono text-[#00D4FF] text-xs">{step.num}</span>
                     </div>
-                    <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold mb-3 tracking-[-0.02em]">
+                    <h3 className="font-heading text-xl font-bold mb-3 tracking-[-0.02em]">
                       {step.title}
                     </h3>
                     <p className="text-zinc-500 text-sm leading-relaxed mb-3">
                       {step.desc}
                     </p>
-                    <p className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                    <p className="font-mono text-[11px] text-zinc-600">
                       {step.detail}
                     </p>
                   </div>
@@ -553,7 +553,7 @@ export default function Home() {
               <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-4">
                 Under the Hood
               </p>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-6">
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-6">
                 The decision pipeline.
               </h2>
               <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl mb-16">
@@ -612,7 +612,7 @@ export default function Home() {
                     <div className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 h-full transition-colors hover:border-white/[0.12]`}>
                       {/* Stage header */}
                       <div className="flex items-center gap-2 mb-4">
-                        <span className={`font-[family-name:var(--font-jetbrains)] text-[10px] font-bold uppercase tracking-wider ${
+                        <span className={`font-mono text-[10px] font-bold uppercase tracking-wider ${
                           step.color === "violet" ? "text-violet-400" :
                           step.color === "amber" ? "text-amber-400" :
                           step.color === "emerald" ? "text-emerald-400" :
@@ -622,7 +622,7 @@ export default function Home() {
                         </span>
                       </div>
 
-                      <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em] mb-3">
+                      <h3 className="font-heading text-base font-bold tracking-[-0.01em] mb-3">
                         {step.title}
                       </h3>
 
@@ -642,7 +642,7 @@ export default function Home() {
                       </ul>
 
                       {/* Example output */}
-                      <div className={`font-[family-name:var(--font-jetbrains)] text-[11px] px-3 py-2 rounded-md border border-white/[0.04] bg-white/[0.02] ${
+                      <div className={`font-mono text-[11px] px-3 py-2 rounded-md border border-white/[0.04] bg-white/[0.02] ${
                         step.color === "violet" ? "text-violet-400/80" :
                         step.color === "amber" ? "text-amber-400/80" :
                         step.color === "emerald" ? "text-emerald-400/80" :
@@ -659,13 +659,13 @@ export default function Home() {
             {/* Mobile flow connector hint */}
             <Reveal delay={1}>
               <div className="mt-8 flex items-center justify-center gap-3 text-zinc-600 sm:hidden">
-                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Event</span>
+                <span className="font-mono text-[11px]">Event</span>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Brain</span>
+                <span className="font-mono text-[11px]">Brain</span>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Guard</span>
+                <span className="font-mono text-[11px]">Guard</span>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span className="font-[family-name:var(--font-jetbrains)] text-[11px]">Tip</span>
+                <span className="font-mono text-[11px]">Tip</span>
               </div>
             </Reveal>
           </div>
@@ -681,7 +681,7 @@ export default function Home() {
                   <p className="text-[13px] font-medium text-zinc-500 tracking-wide uppercase mb-4">
                     Live Agent Log
                   </p>
-                  <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold tracking-[-0.03em] mb-4">
+                  <h2 className="font-heading text-3xl font-bold tracking-[-0.03em] mb-4">
                     Watch it think.
                   </h2>
                   <p className="text-zinc-500 text-sm leading-relaxed mb-6">
@@ -689,7 +689,7 @@ export default function Home() {
                     evaluate engagement in real-time, and execute tips onchain —
                     all logged and auditable.
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-zinc-600 font-[family-name:var(--font-jetbrains)]">
+                  <div className="flex items-center gap-2 text-xs text-zinc-600 font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Fully auditable decision trail
                   </div>
@@ -706,12 +706,12 @@ export default function Home() {
                         <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
                         <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
                       </div>
-                      <span className="ml-3 font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                      <span className="ml-3 font-mono text-[11px] text-zinc-600">
                         rumble-pulse-agent — session_0x8f2a
                       </span>
                       <div className="ml-auto flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
-                        <span className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600">
+                        <span className="font-mono text-[11px] text-zinc-600">
                           live
                         </span>
                       </div>
@@ -740,7 +740,7 @@ export default function Home() {
               <Reveal delay={1}>
                 <div className="card card-accent p-6 h-full">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em]">
+                    <h3 className="font-heading text-base font-bold tracking-[-0.01em]">
                       Smart Treasury Split
                     </h3>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-600 shrink-0" aria-hidden="true">
@@ -752,7 +752,7 @@ export default function Home() {
                     Every tip is auto-split between creator, editor, and community pool.
                     Configurable ratios — your money goes exactly where you want.
                   </p>
-                  <div className="flex gap-4 font-[family-name:var(--font-jetbrains)] text-[11px]">
+                  <div className="flex gap-4 font-mono text-[11px]">
                     <span className="text-zinc-600">creator: <span className="text-white">80%</span></span>
                     <span className="text-zinc-600">editor: <span className="text-white">10%</span></span>
                     <span className="text-zinc-600">community: <span className="text-white">10%</span></span>
@@ -764,7 +764,7 @@ export default function Home() {
               <Reveal delay={2}>
                 <div className="card card-accent p-6 h-full">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em]">
+                    <h3 className="font-heading text-base font-bold tracking-[-0.01em]">
                       LLM Reasoning
                     </h3>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-600 shrink-0" aria-hidden="true">
@@ -777,7 +777,7 @@ export default function Home() {
                     Every tip passes through an LLM reasoning layer — evaluating
                     engagement quality, sentiment, and context.
                   </p>
-                  <div className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-600 bg-white/[0.02] rounded-md px-3 py-2 border border-white/[0.04]">
+                  <div className="font-mono text-[11px] text-zinc-600 bg-white/[0.02] rounded-md px-3 py-2 border border-white/[0.04]">
                     <span className="text-amber-400/70">thinking:</span> score=0.87 sentiment=positive → tip 2.50
                   </div>
                 </div>
@@ -787,7 +787,7 @@ export default function Home() {
               <Reveal delay={3} className="md:col-span-2">
                 <div className="card card-accent p-6 flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
                   <div className="flex-1">
-                    <h3 className="font-[family-name:var(--font-heading)] text-base font-bold tracking-[-0.01em] mb-2">
+                    <h3 className="font-heading text-base font-bold tracking-[-0.01em] mb-2">
                       Budget Guardian
                     </h3>
                     <p className="text-zinc-500 text-sm leading-relaxed">
@@ -795,7 +795,7 @@ export default function Home() {
                       treasury is never drained. Configurable per-session and global limits.
                     </p>
                   </div>
-                  <div className="flex gap-6 font-[family-name:var(--font-jetbrains)] text-xs text-zinc-500 shrink-0">
+                  <div className="flex gap-6 font-mono text-xs text-zinc-500 shrink-0">
                     <div className="text-center">
                       <div className="text-white text-lg font-medium">50</div>
                       <div>USDT/session</div>
@@ -850,7 +850,7 @@ export default function Home() {
               <div className="flex flex-wrap items-center gap-6 pt-8 border-t border-white/[0.04]">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02]">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-400">
+                  <span className="font-mono text-[11px] text-zinc-400">
                     Built for Tether WDK Hackathon
                   </span>
                 </div>
@@ -858,7 +858,7 @@ export default function Home() {
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" className="text-zinc-500" aria-hidden="true">
                     <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-400">
+                  <span className="font-mono text-[11px] text-zinc-400">
                     Open Source
                   </span>
                 </div>
@@ -866,7 +866,7 @@ export default function Home() {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500" aria-hidden="true">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                  <span className="font-[family-name:var(--font-jetbrains)] text-[11px] text-zinc-400">
+                  <span className="font-mono text-[11px] text-zinc-400">
                     Non-custodial
                   </span>
                 </div>
