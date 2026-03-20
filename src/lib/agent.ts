@@ -160,7 +160,7 @@ function scoreEventFallback(event: StreamEvent): number {
 function calculateTipAmount(score: number): number {
   const budget = getBudget();
   const maxTip = Math.min(budget.config.max_per_tip, budget.remaining);
-  if (maxTip <= 0) return 0;
+  if (maxTip < 0.5) return 0; // Can't tip below minimum
   const amount = Number((score * maxTip).toFixed(2));
   return Math.max(0.5, Math.min(amount, maxTip));
 }

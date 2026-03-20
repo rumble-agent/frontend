@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ─── Scroll Reveal Hook ─── */
 function useReveal() {
@@ -222,43 +222,34 @@ function AgentLog() {
   const [cycle, setCycle] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
-  const cleanupRef = useRef<(() => void) | null>(null);
-
-  const startAnimation = useCallback(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    const timer = setInterval(() => {
-      setLines((p) => {
-        if (p >= LOG_LINES.length) {
-          clearInterval(timer);
-          timeout = setTimeout(() => {
-            setLines(0);
-            setCycle((c) => c + 1);
-            startedRef.current = false;
-          }, 3000);
-          return p;
-        }
-        return p + 1;
-      });
-    }, 700);
-
-    cleanupRef.current = () => {
-      clearInterval(timer);
-      if (timeout) clearTimeout(timeout);
-    };
-  }, []);
-
+  // Start animation when element is visible AND a new cycle begins
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
+    let timer: ReturnType<typeof setInterval> | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          startAnimation();
-          observer.unobserve(el);
+        if (entry.isIntersecting && !startedRef.current) {
+          startedRef.current = true;
+
+          timer = setInterval(() => {
+            setLines((p) => {
+              if (p >= LOG_LINES.length) {
+                if (timer) clearInterval(timer);
+                timer = null;
+                timeout = setTimeout(() => {
+                  setLines(0);
+                  startedRef.current = false;
+                  setCycle((c) => c + 1);
+                }, 3000);
+                return p;
+              }
+              return p + 1;
+            });
+          }, 700);
         }
       },
       { threshold: 0.3 }
@@ -267,9 +258,10 @@ function AgentLog() {
     observer.observe(el);
     return () => {
       observer.disconnect();
-      cleanupRef.current?.();
+      if (timer) clearInterval(timer);
+      if (timeout) clearTimeout(timeout);
     };
-  }, [startAnimation]);
+  }, [cycle]);
 
   return (
     <div

@@ -90,8 +90,14 @@ export default function Dashboard() {
   const [splitValues, setSplitValues] = useState({ creator: 80, editor: 10, charity: 10 });
   const [walletError, setWalletError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [triggerLoading, setTriggerLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inflightRef = useRef(false);
+  const seenIdsRef = useRef(new Set<string>());
+  const userScrolledRef = useRef(false);
 
   // Fetch wallet state
   const fetchWallet = useCallback(async () => {
@@ -125,16 +131,24 @@ export default function Dashboard() {
       const data = await res.json();
       setStats(data);
     } catch {
-      // Stats are non-critical — silently retry on next cycle
+      // Stats are non-critical
     }
   }, []);
 
-  // Connect to SSE stream
+  // Connect to SSE stream with deduplication
   useEffect(() => {
     const eventSource = new EventSource("/api/events");
     eventSource.onmessage = (e) => {
       try {
         const entry: AgentLogEntry = JSON.parse(e.data);
+        // Dedup: skip entries we've already seen (on SSE reconnect)
+        if (seenIdsRef.current.has(entry.id)) return;
+        seenIdsRef.current.add(entry.id);
+        // Cap the seen IDs set to prevent unbounded growth
+        if (seenIdsRef.current.size > 500) {
+          const arr = Array.from(seenIdsRef.current);
+          seenIdsRef.current = new Set(arr.slice(-300));
+        }
         setLogs((prev) => {
           if (prev.length >= 200) {
             const next = prev.slice(-149);
@@ -153,12 +167,25 @@ export default function Dashboard() {
     return () => eventSource.close();
   }, []);
 
-  // Auto-scroll logs
+  // Smart auto-scroll: only scroll if user is near the bottom
   useEffect(() => {
-    if (activeTab === "log") {
+    if (activeTab === "log" && !userScrolledRef.current) {
       logEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [logs, activeTab]);
+
+  // Track user scroll position
+  useEffect(() => {
+    const container = logContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // If user is within 80px of bottom, consider them "at bottom"
+      userScrolledRef.current = scrollHeight - scrollTop - clientHeight > 80;
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Fetch wallet + stats on mount
   useEffect(() => {
@@ -166,16 +193,35 @@ export default function Dashboard() {
     fetchStats();
   }, [fetchWallet, fetchStats]);
 
-  // Trigger single event
-  const triggerEvent = async () => {
+  // Trigger single event (POST with auth)
+  const triggerEvent = useCallback(async () => {
+    // In-flight guard: skip if previous request still running
+    if (inflightRef.current) return;
+    inflightRef.current = true;
+    setTriggerLoading(true);
+    setActionError(null);
     try {
-      const res = await fetch("/api/agent");
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ execute: false }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setActionError(err.error ?? "Agent request failed");
+        return;
+      }
       const data: AgentResponse = await res.json();
       setLastResponse(data);
       fetchWallet();
       fetchStats();
-    } catch {}
-  };
+    } catch {
+      setActionError("Network error — agent unreachable");
+    } finally {
+      inflightRef.current = false;
+      setTriggerLoading(false);
+    }
+  }, [fetchWallet, fetchStats]);
 
   // Auto-run
   const toggleAutoRun = () => {
@@ -190,36 +236,56 @@ export default function Dashboard() {
     }
   };
 
-  // Reset budget
+  // Reset budget (with auth + error handling)
   const resetBudget = async () => {
-    await fetch("/api/wallet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "reset_budget" }),
-    });
-    fetchWallet();
-    fetchStats();
+    setActionError(null);
+    try {
+      const res = await fetch("/api/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset_budget" }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setActionError(err.error ?? "Failed to reset budget");
+        return;
+      }
+      fetchWallet();
+      fetchStats();
+    } catch {
+      setActionError("Network error");
+    }
   };
 
-  // Save split config
+  // Save split config (with error handling)
   const saveSplit = async () => {
     const total = splitValues.creator + splitValues.editor + splitValues.charity;
     if (total !== 100) return;
-    await fetch("/api/wallet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        budget_config: {
-          split_rules: {
-            creator: splitValues.creator / 100,
-            editor: splitValues.editor / 100,
-            charity: splitValues.charity / 100,
+    setActionError(null);
+    try {
+      const res = await fetch("/api/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          budget_config: {
+            split_rules: {
+              creator: splitValues.creator / 100,
+              editor: splitValues.editor / 100,
+              charity: splitValues.charity / 100,
+            },
           },
-        },
-      }),
-    });
-    setEditingSplit(false);
-    fetchWallet();
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setActionError(err.error ?? "Failed to save split");
+        return;
+      }
+      setEditingSplit(false);
+      fetchWallet();
+    } catch {
+      setActionError("Network error");
+    }
   };
 
   // Export logs
@@ -303,6 +369,16 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Action Error */}
+        {actionError && (
+          <div className="mb-4 px-4 py-2.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] text-red-400 text-[13px] font-[family-name:var(--font-jetbrains)] flex items-center justify-between">
+            <span>{actionError}</span>
+            <button onClick={() => setActionError(null)} className="text-red-400/60 hover:text-red-400 ml-4 shrink-0">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+            </button>
+          </div>
+        )}
+
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button
@@ -317,10 +393,10 @@ export default function Dashboard() {
           </button>
           <button
             onClick={triggerEvent}
-            disabled={isRunning}
+            disabled={isRunning || triggerLoading}
             className="px-4 py-2 text-sm font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Trigger Event
+            {triggerLoading ? "Evaluating..." : "Trigger Event"}
           </button>
           <button
             onClick={resetBudget}
@@ -571,7 +647,7 @@ export default function Dashboard() {
               </div>
 
               {/* Tab content */}
-              <div className="flex-1 overflow-y-auto max-h-[700px]">
+              <div ref={logContainerRef} className="flex-1 overflow-y-auto max-h-[700px]">
                 {activeTab === "log" ? (
                   <div className="p-5">
                     {logs.length === 0 ? (

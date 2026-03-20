@@ -3,6 +3,22 @@ import { evaluateEvent, getNextMockEvent, updateLastDecisionTx } from "@/lib/age
 import { sendTip, canTip } from "@/lib/wdk";
 import { z } from "zod";
 
+/* ─── Auth ─── */
+const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
+const IS_DEV = process.env.NODE_ENV === "development";
+
+function checkAuth(req: NextRequest): boolean {
+  if (!ADMIN_TOKEN) return IS_DEV;
+  const header = req.headers.get("x-admin-token") ?? "";
+  if (header.length !== ADMIN_TOKEN.length) return false;
+  // Constant-time comparison
+  let mismatch = 0;
+  for (let i = 0; i < header.length; i++) {
+    mismatch |= header.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 /* ─── Request Validation ─── */
 const EventSchema = z.object({
   type: z.enum(["viewer_spike", "new_subscriber", "donation", "milestone", "sentiment_shift"]),
@@ -28,6 +44,10 @@ const DEMO_CREATOR = process.env.DEMO_CREATOR_ADDRESS ?? "0x00000000000000000000
 /* POST /api/agent — Evaluate an event and optionally execute tip */
 export async function POST(req: NextRequest) {
   try {
+    if (!checkAuth(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const raw = await req.json().catch(() => null);
     if (!raw) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
@@ -82,8 +102,12 @@ export async function POST(req: NextRequest) {
 }
 
 /* GET /api/agent — Evaluate a mock event (no execution, safe for demo) */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    if (!checkAuth(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const event = getNextMockEvent();
     const decision = await evaluateEvent(event, DEMO_CREATOR);
     return NextResponse.json({ decision, transactions: [] });
