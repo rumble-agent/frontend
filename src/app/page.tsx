@@ -375,11 +375,12 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="#"
+              href="/dashboard"
               className="hidden sm:inline-flex text-[13px] font-medium px-4 py-1.5 rounded-md bg-white text-black hover:bg-zinc-200 transition-colors"
             >
               Launch Agent
             </a>
+
             <button
               className="md:hidden w-8 h-8 flex flex-col justify-center items-center gap-[5px]"
               onClick={() => setMenuOpen(!menuOpen)}
@@ -430,7 +431,7 @@ export default function Home() {
 
                 <div className="animate-in delay-3 mt-10 flex flex-wrap gap-3">
                   <a
-                    href="#"
+                    href="/dashboard"
                     className="cta-primary inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg bg-white text-black"
                   >
                     Launch Agent
