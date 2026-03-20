@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import type { StreamEvent, AgentDecision, AgentLogEntry } from "./types";
+import type { StreamEvent, AgentDecision, AgentLogEntry, DecisionRecord, AgentStats } from "./types";
 import { canTip, calculateSplit, getBudget } from "./wdk";
 
 /* ─── Log Store (in-memory, streamed via SSE) ─── */
@@ -17,7 +17,7 @@ function emit(type: AgentLogEntry["type"], message: string): AgentLogEntry {
     message,
   };
   logHistory.push(entry);
-  if (logHistory.length > 100) logHistory.shift();
+  if (logHistory.length > 200) logHistory.shift();
   for (const listener of listeners) listener(entry);
   return entry;
 }
@@ -29,6 +29,55 @@ export function subscribe(listener: LogListener): () => void {
 
 export function getLogHistory(): AgentLogEntry[] {
   return [...logHistory];
+}
+
+/* ─── Decision History (in-memory) ─── */
+const decisionHistory: DecisionRecord[] = [];
+const SESSION_START = Date.now();
+let totalEventsEvaluated = 0;
+let totalTipsSent = 0;
+let totalTipsSkipped = 0;
+let totalAmountTipped = 0;
+let totalScoreSum = 0;
+let llmUsageCount = 0;
+
+function recordDecision(decision: AgentDecision, transactions: { tx_hash: string; amount: number; recipient: string }[], usedLLM: boolean) {
+  const record: DecisionRecord = {
+    id: `dec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    decision,
+    transactions: transactions.map((tx) => ({ ...tx, success: true, chain: process.env.WDK_CHAIN ?? "ethereum-sepolia", timestamp: Date.now() })),
+    usedLLM,
+    timestamp: Date.now(),
+  };
+  decisionHistory.push(record);
+  if (decisionHistory.length > 50) decisionHistory.shift();
+
+  totalEventsEvaluated++;
+  totalScoreSum += decision.score;
+  if (usedLLM) llmUsageCount++;
+  if (decision.should_tip) {
+    totalTipsSent++;
+    totalAmountTipped += decision.amount;
+  } else {
+    totalTipsSkipped++;
+  }
+}
+
+export function getDecisionHistory(): DecisionRecord[] {
+  return [...decisionHistory].reverse();
+}
+
+export function getAgentStats(): AgentStats {
+  return {
+    total_events_evaluated: totalEventsEvaluated,
+    total_tips_sent: totalTipsSent,
+    total_tips_skipped: totalTipsSkipped,
+    total_amount_tipped: Number(totalAmountTipped.toFixed(2)),
+    average_score: totalEventsEvaluated > 0 ? Number((totalScoreSum / totalEventsEvaluated).toFixed(2)) : 0,
+    success_rate: totalEventsEvaluated > 0 ? Number(((totalTipsSent / totalEventsEvaluated) * 100).toFixed(1)) : 0,
+    llm_usage_rate: totalEventsEvaluated > 0 ? Number(((llmUsageCount / totalEventsEvaluated) * 100).toFixed(1)) : 0,
+    session_start: SESSION_START,
+  };
 }
 
 /* ─── LLM Decision Schema ─── */
@@ -169,7 +218,7 @@ export async function evaluateEvent(
     const budgetCheck = canTip(decision.amount);
     if (!budgetCheck.allowed) {
       emit("wrn", `Budget blocked: ${budgetCheck.reason}`);
-      return {
+      const blockedDecision: AgentDecision = {
         should_tip: false,
         amount: 0,
         score: decision.score,
@@ -178,12 +227,14 @@ export async function evaluateEvent(
         event,
         timestamp: Date.now(),
       };
+      recordDecision(blockedDecision, [], usedLLM);
+      return blockedDecision;
     }
   }
 
   if (!decision.should_tip) {
     emit("llm", `Skipped: ${decision.reasoning}`);
-    return {
+    const skipDecision: AgentDecision = {
       should_tip: false,
       amount: 0,
       score: decision.score,
@@ -192,6 +243,8 @@ export async function evaluateEvent(
       event,
       timestamp: Date.now(),
     };
+    recordDecision(skipDecision, [], usedLLM);
+    return skipDecision;
   }
 
   // Calculate splits
@@ -200,7 +253,7 @@ export async function evaluateEvent(
   emit(usedLLM ? "act" : "llm", `→ Tip ${decision.amount} USDT | ${decision.reasoning}`);
   emit("inf", `Balance: ${budget.remaining.toFixed(2)} USDT remaining | Budget: ${((budget.spent_this_session / budget.config.max_per_session) * 100).toFixed(0)}% consumed`);
 
-  return {
+  const tipDecision: AgentDecision = {
     should_tip: true,
     amount: decision.amount,
     score: decision.score,
@@ -209,6 +262,9 @@ export async function evaluateEvent(
     event,
     timestamp: Date.now(),
   };
+
+  recordDecision(tipDecision, [], usedLLM);
+  return tipDecision;
 }
 
 /* ─── Mock Event Simulator (for demo) ─── */
@@ -242,6 +298,16 @@ const MOCK_EVENTS: StreamEvent[] = [
     type: "donation",
     timestamp: Date.now(),
     data: { sentiment: "positive", sentiment_score: 0.78 },
+  },
+  {
+    type: "sentiment_shift",
+    timestamp: Date.now(),
+    data: { sentiment: "negative", sentiment_score: 0.3 },
+  },
+  {
+    type: "new_subscriber",
+    timestamp: Date.now(),
+    data: { subscriber_id: "user_2941", sentiment: "neutral", sentiment_score: 0.5 },
   },
 ];
 

@@ -76,3 +76,24 @@ export interface TxResult {
   chain: string;
   timestamp: number;
 }
+
+/* ─── Decision History Entry ─── */
+export interface DecisionRecord {
+  id: string;
+  decision: AgentDecision;
+  transactions: TxResult[];
+  usedLLM: boolean;
+  timestamp: number;
+}
+
+/* ─── Agent Stats (aggregated) ─── */
+export interface AgentStats {
+  total_events_evaluated: number;
+  total_tips_sent: number;
+  total_tips_skipped: number;
+  total_amount_tipped: number;
+  average_score: number;
+  success_rate: number;
+  llm_usage_rate: number;
+  session_start: number;
+}
