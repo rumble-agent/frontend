@@ -576,7 +576,7 @@ export default function Home() {
                 {
                   stage: "02",
                   label: "Agent Brain",
-                  title: "Claude LLM",
+                  title: "Llama 4 Scout",
                   items: ["Significance score 0-1", "Sentiment analysis", "Context reasoning", "Rule-based fallback"],
                   color: "amber",
                   example: "score=0.87 → tip 2.50 USDT",

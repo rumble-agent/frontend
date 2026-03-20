@@ -117,7 +117,9 @@ export async function getWalletState(): Promise<WalletState> {
       "function balanceOf(address) view returns (uint256)",
     ]);
     const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
-    const result: string = await w.provider!.call({ to: USDT_CONTRACT, data });
+    const provider = w.provider;
+    if (!provider) throw new Error("No provider connected");
+    const result: string = await provider.call({ to: USDT_CONTRACT, data });
     if (result && result !== "0x") {
       balance = fromUsdtUnits(BigInt(result));
     }
