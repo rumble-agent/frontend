@@ -4,6 +4,8 @@ import { evaluateEvent, updateLastDecisionTx } from "@/lib/agent";
 import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 import { checkAuth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 /* GET /api/rumble — Check Rumble integration status */
 export async function GET() {
   return NextResponse.json(getRumbleStatus());

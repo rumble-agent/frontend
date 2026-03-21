@@ -4,6 +4,8 @@ import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 import { checkAuth } from "@/lib/auth";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 /* ─── Request Validation ─── */
 const EventSchema = z.object({
   type: z.enum(["viewer_spike", "new_subscriber", "donation", "milestone", "sentiment_shift"]),

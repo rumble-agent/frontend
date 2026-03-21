@@ -33,7 +33,7 @@ function useDashboardState() {
   const fetchWallet = useCallback(async () => {
     try {
       setWalletError(null);
-      const res = await fetch("/api/wallet");
+      const res = await fetch("/api/wallet", { cache: "no-store" });
       if (!res.ok) {
         const err = await res.json();
         setWalletError(err.error ?? "Failed to connect wallet");
@@ -54,7 +54,7 @@ function useDashboardState() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/stats");
+      const res = await fetch("/api/stats", { cache: "no-store" });
       if (!res.ok) return;
       setStats(await res.json());
     } catch { /* non-critical */ }
@@ -62,7 +62,7 @@ function useDashboardState() {
 
   const fetchRumbleStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/rumble");
+      const res = await fetch("/api/rumble", { cache: "no-store" });
       if (res.ok) setRumble(await res.json());
     } catch { /* non-critical */ }
   }, []);

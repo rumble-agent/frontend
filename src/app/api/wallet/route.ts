@@ -3,6 +3,8 @@ import { getWalletState, getBudget, updateBudgetConfig, resetBudget, getCreatorA
 import { checkAuth } from "@/lib/auth";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const BudgetConfigSchema = z.object({
   max_per_session: z.number().positive().optional(),
   max_per_tip: z.number().positive().optional(),
