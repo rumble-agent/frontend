@@ -223,9 +223,16 @@ export async function evaluateEvent(
 
   // Clamp amount to budget limits
   if (decision.should_tip) {
-    decision.amount = Math.min(decision.amount, budget.config.max_per_tip, budget.remaining);
-    decision.amount = Math.max(decision.amount, 0.50);
-    decision.amount = Number(decision.amount.toFixed(2));
+    const maxAllowed = Math.min(budget.config.max_per_tip, budget.remaining);
+    if (maxAllowed < 0.50) {
+      decision.should_tip = false;
+      decision.amount = 0;
+      decision.reasoning = "Budget too low for minimum tip (0.50 USDT)";
+    } else {
+      decision.amount = Math.min(decision.amount, maxAllowed);
+      decision.amount = Math.max(decision.amount, 0.50);
+      decision.amount = Number(decision.amount.toFixed(2));
+    }
   }
 
   // Budget validation

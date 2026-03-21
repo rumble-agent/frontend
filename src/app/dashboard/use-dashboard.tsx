@@ -27,6 +27,7 @@ function useDashboardState() {
   const inflightRef = useRef(false);
   const seenIdsRef = useRef(new Set<string>());
   const userScrolledRef = useRef(false);
+  const triggerRef = useRef<() => void>(() => {});
 
   /* ─── Data fetching ─── */
   const fetchWallet = useCallback(async () => {
@@ -152,6 +153,9 @@ function useDashboardState() {
     }
   }, [fetchWallet, fetchStats, creatorAddress]);
 
+  // Keep ref in sync so setInterval always calls latest triggerEvent
+  triggerRef.current = triggerEvent;
+
   const toggleAutoRun = useCallback(() => {
     if (isRunning) {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -159,10 +163,10 @@ function useDashboardState() {
       setIsRunning(false);
     } else {
       setIsRunning(true);
-      triggerEvent();
-      intervalRef.current = setInterval(triggerEvent, 5000);
+      triggerRef.current();
+      intervalRef.current = setInterval(() => triggerRef.current(), 5000);
     }
-  }, [isRunning, triggerEvent]);
+  }, [isRunning]);
 
   const toggleRumble = useCallback(async () => {
     setRumbleLoading(true);
