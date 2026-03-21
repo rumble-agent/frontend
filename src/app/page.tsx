@@ -1,7 +1,7 @@
 import { Nav } from "./landing/nav";
 import { HeroSection } from "./landing/hero";
 import { Marquee } from "./landing/marquee";
-import { HowItWorks, FeaturesSection, StackSection, Footer } from "./landing/sections";
+import { HowItWorks, FeaturesSection, StackSection, CTABanner, Footer } from "./landing/sections";
 import { PipelineSection } from "./landing/pipeline";
 import { AgentLogSection } from "./landing/agent-log";
 
@@ -17,6 +17,7 @@ export default function Home() {
         <AgentLogSection />
         <FeaturesSection />
         <StackSection />
+        <CTABanner />
       </main>
       <Footer />
     </div>

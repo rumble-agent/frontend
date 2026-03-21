@@ -7,6 +7,13 @@
   --muted: #888;
   --border: rgba(255, 255, 255, 0.06);
   --surface: rgba(255, 255, 255, 0.02);
+
+  /* ── Timing System ── */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 500ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @theme inline {
@@ -16,6 +23,12 @@
   --font-sans: var(--font-inter);
   --font-heading: var(--font-heading);
   --font-mono: var(--font-jetbrains);
+}
+
+/* ── Smooth Scroll ── */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
 body {
@@ -47,15 +60,24 @@ button:focus-visible {
 
 /* ── Card ── */
 .card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  transition: border-color 0.3s ease, transform 0.3s ease;
+  transition: border-color var(--duration-normal) ease,
+              transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) ease;
 }
 
 .card:hover {
   border-color: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.card:active {
+  transform: translateY(0) scale(0.995);
+  transition-duration: var(--duration-fast);
 }
 
 /* ── Terminal Typing Animation ── */
@@ -96,8 +118,8 @@ button:focus-visible {
 .reveal {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.7s var(--ease-out),
+              transform 0.7s var(--ease-out);
 }
 
 .reveal.visible {
@@ -123,7 +145,7 @@ button:focus-visible {
 }
 
 .log-line {
-  animation: slide-in 0.25s ease forwards;
+  animation: slide-in var(--duration-normal) ease forwards;
 }
 
 /* ── Marquee ── */
@@ -143,7 +165,8 @@ button:focus-visible {
 /* ── CTA Glow ── */
 .cta-primary {
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  transition: transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) ease;
 }
 
 .cta-primary:hover {
@@ -152,7 +175,8 @@ button:focus-visible {
 }
 
 .cta-primary:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
+  transition-duration: var(--duration-fast);
 }
 
 /* ── How It Works Step Connector ── */
@@ -180,10 +204,78 @@ button:focus-visible {
 /* ── Accent Left Border Card ── */
 .card-accent {
   border-left: 2px solid rgba(0, 212, 255, 0.3);
+  transition: border-left-color var(--duration-normal) ease,
+              border-color var(--duration-normal) ease,
+              transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) ease;
 }
 
 .card-accent:hover {
   border-left-color: rgba(0, 212, 255, 0.6);
+}
+
+/* ── Interactive Elements ── */
+.btn-press {
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background-color var(--duration-normal) ease,
+              color var(--duration-normal) ease,
+              border-color var(--duration-normal) ease,
+              box-shadow var(--duration-normal) ease;
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ── Stack / Tech Badge ── */
+.tech-badge {
+  transition: border-color var(--duration-normal) ease,
+              background-color var(--duration-normal) ease,
+              transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) ease;
+}
+
+.tech-badge:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.tech-badge:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--duration-fast);
+}
+
+/* ── Trust Signal Pill ── */
+.trust-pill {
+  transition: border-color var(--duration-normal) ease,
+              background-color var(--duration-normal) ease,
+              transform var(--duration-normal) var(--ease-out);
+}
+
+.trust-pill:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+}
+
+/* ── CTA Banner (pre-footer) ── */
+.cta-banner {
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-banner::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(0, 212, 255, 0.08) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 /* ── Scrollbar ── */
@@ -207,6 +299,10 @@ button:focus-visible {
 
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .animate-in,
   .reveal,
   .log-line {
@@ -227,5 +323,14 @@ button:focus-visible {
 
   .cursor-blink::after {
     animation: none !important;
+  }
+
+  .card,
+  .card-accent,
+  .btn-press,
+  .tech-badge,
+  .trust-pill,
+  .cta-primary {
+    transition: none !important;
   }
 }

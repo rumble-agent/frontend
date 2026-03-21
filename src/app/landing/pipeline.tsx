@@ -77,7 +77,7 @@ export function PipelineSection() {
                       {ARROW}
                     </div>
                   )}
-                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 h-full transition-colors hover:border-white/[0.12]">
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 h-full transition-all duration-[250ms] hover:border-white/[0.12] hover:bg-white/[0.03] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.995]">
                     <div className="flex items-center gap-2 mb-4">
                       <span className={`font-mono text-[10px] font-bold uppercase tracking-wider ${colors.label}`}>
                         {step.label}

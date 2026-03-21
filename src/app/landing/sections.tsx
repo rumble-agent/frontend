@@ -196,7 +196,7 @@ export function StackSection() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] transition-colors"
+                className="tech-badge flex items-center gap-3 px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] cursor-default"
               >
                 <span className="text-sm font-medium text-white">{item.label}</span>
                 <span className="text-xs text-zinc-600">{item.sub}</span>
@@ -207,14 +207,14 @@ export function StackSection() {
 
         {/* Trust signals */}
         <Reveal delay={2}>
-          <div className="flex flex-wrap items-center gap-6 pt-8 border-t border-white/[0.04]">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <div className="flex flex-wrap items-center gap-4 pt-8 border-t border-white/[0.04]">
+            <div className="trust-pill flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] cursor-default">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
               <span className="font-mono text-[11px] text-zinc-400">
                 Built for Tether WDK Hackathon
               </span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02]">
+            <div className="trust-pill flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] cursor-default">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" className="text-zinc-500" aria-hidden="true">
                 <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" clipRule="evenodd" />
               </svg>
@@ -222,7 +222,7 @@ export function StackSection() {
                 Open Source
               </span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02]">
+            <div className="trust-pill flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] cursor-default">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500" aria-hidden="true">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
@@ -237,15 +237,142 @@ export function StackSection() {
   );
 }
 
+/* ─── CTA Banner (pre-footer) ─── */
+export function CTABanner() {
+  return (
+    <section className="cta-banner py-24 px-6 border-t border-white/[0.04]">
+      <div className="max-w-2xl mx-auto text-center">
+        <Reveal>
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-[-0.03em] mb-4">
+            Ready to automate your tips?
+          </h2>
+          <p className="text-zinc-500 text-base leading-relaxed mb-10 max-w-lg mx-auto">
+            Set up your agent in under a minute. Configure your budget,
+            connect to Rumble, and let AI handle the rest.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="/dashboard"
+              className="cta-primary btn-press inline-flex items-center px-6 py-3 text-sm font-medium rounded-lg bg-white text-black"
+            >
+              Launch Agent
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="ml-2" aria-hidden="true">
+                <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+            <a
+              href="https://github.com/rumble-agent"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-press inline-flex items-center px-6 py-3 text-sm font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="mr-2" aria-hidden="true">
+                <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" clipRule="evenodd" />
+              </svg>
+              View Source
+            </a>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Footer ─── */
 export function Footer() {
   return (
-    <footer className="border-t border-white/[0.04] py-6 px-6">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-zinc-600">
-        <span>Rumble Pulse Agent — Built for Tether WDK Hackathon</span>
-        <div className="flex gap-6">
-          <a href="https://github.com/rumble-agent" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
-          <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+    <footer className="border-t border-white/[0.04] py-12 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-12">
+          {/* Branding */}
+          <div>
+            <div className="flex items-center gap-2.5 mb-4">
+              <img src="/rumble-icon.svg" alt="" width={20} height={20} className="shrink-0 opacity-60" aria-hidden="true" />
+              <span className="font-heading font-bold text-[14px] tracking-[-0.02em] text-zinc-300">
+                Rumble Pulse
+              </span>
+            </div>
+            <p className="text-[13px] text-zinc-600 leading-relaxed max-w-[240px]">
+              Autonomous tipping agent for Rumble creators. Powered by Tether WDK.
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <div>
+            <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-4">
+              Navigate
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { label: "How It Works", href: "#how-it-works" },
+                { label: "Features", href: "#features" },
+                { label: "Agent Log", href: "#agent-log" },
+                { label: "Stack", href: "#stack" },
+              ].map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="text-[13px] text-zinc-500 hover:text-white transition-colors w-fit"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Links */}
+          <div>
+            <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-4">
+              Links
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <a
+                href="https://github.com/rumble-agent"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[13px] text-zinc-500 hover:text-white transition-colors w-fit inline-flex items-center gap-1.5"
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" clipRule="evenodd" />
+                </svg>
+                GitHub
+              </a>
+              <a
+                href="/dashboard"
+                className="text-[13px] text-zinc-500 hover:text-white transition-colors w-fit inline-flex items-center gap-1.5"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Dashboard
+              </a>
+              <a
+                href="https://dorahacks.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[13px] text-zinc-500 hover:text-white transition-colors w-fit inline-flex items-center gap-1.5"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+                DoraHacks
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-[12px] text-zinc-700">
+            Built for Tether Hackathon Galactica: WDK Edition 1
+          </span>
+          <div className="flex items-center gap-4 text-[12px] text-zinc-700">
+            <span>Apache 2.0</span>
+            <span className="w-px h-3 bg-white/[0.06]" />
+            <span>2025</span>
+          </div>
         </div>
       </div>
     </footer>
