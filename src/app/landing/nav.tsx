@@ -132,7 +132,7 @@ export function Nav() {
               <a
                 key={link.label}
                 href={link.href}
-                className={`relative px-3 py-1.5 rounded-md transition-all duration-200 ${
+                className={`group relative px-3 py-1.5 rounded-md transition-all duration-200 ${
                   isActive
                     ? "text-white"
                     : "text-zinc-500 hover:text-zinc-300"

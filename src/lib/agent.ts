@@ -229,9 +229,7 @@ export async function evaluateEvent(
       decision.amount = 0;
       decision.reasoning = "Budget too low for minimum tip (0.50 USDT)";
     } else {
-      decision.amount = Math.min(decision.amount, maxAllowed);
-      decision.amount = Math.max(decision.amount, 0.50);
-      decision.amount = Number(decision.amount.toFixed(2));
+      decision.amount = Number(Math.min(Math.max(decision.amount, 0.50), maxAllowed).toFixed(2));
     }
   }
 

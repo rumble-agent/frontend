@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
     const event = body.event ?? getNextMockEvent();
     const creatorAddress = body.creator_address ?? getCreatorAddress();
 
+    if (!creatorAddress || !/^0x[a-fA-F0-9]{40}$/.test(creatorAddress)) {
+      return NextResponse.json({ error: "Creator address not configured" }, { status: 400 });
+    }
+
     // Agent evaluates the event
     const decision = await evaluateEvent(event, creatorAddress);
 

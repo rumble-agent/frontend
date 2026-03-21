@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
       }
 
       const creatorAddress = body.creator_address ?? getCreatorAddress();
+      if (!creatorAddress || !/^0x[a-fA-F0-9]{40}$/.test(creatorAddress)) {
+        return NextResponse.json({ error: "Creator address not configured" }, { status: 400 });
+      }
       const executeOnChain = body.execute ?? false;
 
       startRumblePoller(async (event) => {

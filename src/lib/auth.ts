@@ -8,7 +8,10 @@ const ADMIN_TOKEN = process.env.AGENT_ADMIN_TOKEN ?? "";
  * When set, requires constant-time matching via x-admin-token header.
  */
 export function checkAuth(req: NextRequest): boolean {
-  if (!ADMIN_TOKEN) return true;
+  if (!ADMIN_TOKEN) {
+    console.warn("[auth] AGENT_ADMIN_TOKEN not set — all requests allowed (demo mode)");
+    return true;
+  }
   const header = req.headers.get("x-admin-token") ?? "";
   if (header.length !== ADMIN_TOKEN.length) return false;
   let mismatch = 0;

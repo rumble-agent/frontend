@@ -141,7 +141,7 @@ export function SetupView() {
       {/* CTA */}
       <button
         onClick={saveCreator}
-        disabled={!creatorValid || creatorSaving}
+        disabled={!creatorValid || creatorSaving || !walletReady}
         className="cta-primary btn-press w-full mt-8 py-3 rounded-xl bg-white text-[#050505] font-semibold text-[14px] hover:bg-zinc-200 disabled:opacity-20 disabled:cursor-not-allowed"
       >
         {creatorSaving ? "Saving..." : "Continue to Dashboard"}
