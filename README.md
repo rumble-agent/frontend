@@ -8,17 +8,17 @@ Built for **Hackathon Galactica: WDK Edition 1** by Tether.
 
 ```
 Stream Events ──→ Agent Brain ──→ WDK Execution ──→ On-chain Tips
-(viewer spike,     (Claude LLM     (self-custodial    (USDT with
- milestones,        evaluates &      wallet, budget     smart split)
- sentiment)         scores event)    validation)
+(viewer spike,     (Llama 4 LLM    (self-custodial    (USDT via
+ milestones,        evaluates &      wallet, budget     TipSplitter
+ sentiment)         scores event)    validation)        contract)
 ```
 
 **Flow:**
 
-1. **Event Layer** — Stream events (viewer spikes, new subscribers, milestones, sentiment shifts, donations) are captured in real-time
-2. **Agent Brain** — Claude evaluates each event with full context: event significance, budget state, spending history. Returns a typed decision: tip or skip, with reasoning
+1. **Event Layer** — Stream events (viewer spikes, new subscribers, milestones, sentiment shifts, donations) are captured from Rumble's Live Stream API in real-time
+2. **Agent Brain** — Llama 4 Scout (via Groq) evaluates each event with full context: event significance, budget state, spending history. Returns a typed decision: tip or skip, with reasoning
 3. **Budget Guardian** — Validates against session limits, per-tip caps, and rate limiting before any transaction
-4. **Smart Split** — Each tip is automatically split: 80% creator, 10% editor, 10% community pool
+4. **TipSplitter Contract** — Tips are routed through an on-chain TipSplitter smart contract with configurable split ratios
 5. **WDK Execution** — Tether WDK sends the USDT transfer on-chain. Non-custodial — private keys never leave the app
 
 ## Architecture
@@ -27,14 +27,20 @@ Stream Events ──→ Agent Brain ──→ WDK Execution ──→ On-chain T
 src/
 ├── app/
 │   ├── page.tsx              # Landing page
+│   ├── landing/              # Landing page components
 │   ├── dashboard/page.tsx    # Real-time agent dashboard
 │   └── api/
 │       ├── agent/route.ts    # POST/GET: evaluate events, execute tips
+│       ├── rumble/route.ts   # Rumble live stream poller control
 │       ├── wallet/route.ts   # GET wallet state, POST reset/update budget
+│       ├── stats/route.ts    # GET agent stats + decision history
 │       └── events/route.ts   # SSE stream for real-time agent logs
 └── lib/
-    ├── agent.ts              # LLM reasoning engine (Claude) + rule-based fallback
-    ├── wdk.ts                # WDK wallet operations + budget management
+    ├── agent.ts              # LLM reasoning engine (Groq Llama 4) + rule-based fallback
+    ├── wdk.ts                # WDK wallet operations + budget management + TipSplitter
+    ├── rumble.ts             # Rumble Live Stream API poller with event diffing
+    ├── mock-events.ts        # Mock event generator for testing
+    ├── auth.ts               # Shared auth module
     └── types.ts              # Shared TypeScript types
 ```
 
@@ -43,11 +49,12 @@ src/
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, TypeScript |
-| Agent | Vercel AI SDK + Claude (Haiku 4.5) with Zod structured output |
+| Agent | Vercel AI SDK + Groq Llama 4 Scout with Zod structured output |
 | Wallet | WDK by Tether (`@tetherto/wdk` + `@tetherto/wdk-wallet-evm`) |
-| Tokens | USDT (ERC-20) on Ethereum |
+| Contracts | TipSplitter (Solidity 0.8.24, OpenZeppelin, Hardhat) |
+| Tokens | USDT (ERC-20) on Ethereum Sepolia |
 | Streaming | Server-Sent Events (SSE) for real-time dashboard |
-| Video | hls.js for Mux HLS streaming |
+| Platform | Rumble Live Stream API v1.1 (polling-based) |
 
 ## Setup
 
@@ -66,28 +73,32 @@ npm install
 
 ### 2. Environment Variables
 
-Create `.env.local` in the project root:
+Copy `.env.example` to `.env.local` and fill in values:
+
+```bash
+cp .env.example .env.local
+```
+
+Key variables:
 
 ```env
-# WDK — generate a seed phrase:
-# node -e "const WDK = require('@tetherto/wdk'); console.log(WDK.default.getRandomSeedPhrase())"
-WDK_SEED_PHRASE="your twelve word seed phrase here"
+# Private key from MetaMask
+WDK_PRIVATE_KEY="0x..."
 
-# EVM RPC Provider
-WDK_EVM_PROVIDER="https://sepolia.drpc.org"
+# Groq API Key (free tier at https://console.groq.com/keys)
+GROQ_API_KEY="gsk_..."
 
-# USDT Contract Address
-# Sepolia: use test ERC-20 address
-# Mainnet: 0xdAC17F958D2ee523a2206206994597C13D831ec7
-USDT_CONTRACT_ADDRESS="0xdAC17F958D2ee523a2206206994597C13D831ec7"
+# USDT contract (deploy MockUSDT from contracts/ for testnet)
+USDT_CONTRACT_ADDRESS="0x..."
 
-# Chain identifier
-WDK_CHAIN="ethereum-sepolia"
+# TipSplitter contract (deploy from contracts/)
+TIP_SPLITTER_ADDRESS="0x..."
 
-# Anthropic API Key (for Claude LLM reasoning)
-# Get one at: https://console.anthropic.com
-ANTHROPIC_API_KEY="sk-ant-..."
+# Rumble Live Stream API URL (from https://rumble.com/account/livestream-api)
+RUMBLE_API_URL="https://rumble.com/-livestream-api/..."
 ```
+
+See `.env.example` for the full list with documentation.
 
 ### 3. Run
 
@@ -103,42 +114,55 @@ npm run dev
 Your wallet address is displayed on the dashboard. Fund it with:
 
 - **Sepolia ETH** (for gas): [faucets.chain.link/sepolia](https://faucets.chain.link/sepolia)
-- **Test ERC-20**: [dashboard.pimlico.io/test-erc20-faucet](https://dashboard.pimlico.io/test-erc20-faucet)
+- **MockUSDT**: Deploy from `contracts/` — has a public `mint()` function
 
 ## Features
 
 ### Agent Intelligence
-- LLM-powered evaluation using Claude Haiku 4.5 via Vercel AI SDK
+- LLM-powered evaluation using Llama 4 Scout via Groq + Vercel AI SDK
 - Structured output with Zod schema — typed decisions, not free-text parsing
 - Contextual reasoning: considers event type, magnitude, sentiment, and budget state
 - Automatic fallback to rule-based scoring if API key not configured or LLM fails
 
+### Rumble Integration
+- Real-time polling of Rumble's Live Stream API (viewer count, subscribers, rants, followers, chat)
+- Event diffing: detects viewer spikes, new subscribers, donations, milestones, sentiment shifts
+- Configurable poll interval (default: 8 seconds)
+
 ### WDK Wallet Integration
-- Non-custodial wallet via `@tetherto/wdk` — seed phrase never leaves the app
-- Real on-chain ERC-20 (USDT) transfers via `account.transfer()`
+- Non-custodial wallet via `@tetherto/wdk` — private key never leaves the app
+- Real on-chain ERC-20 (USDT) transfers via ethers.js
+- TipSplitter smart contract for atomic on-chain tip splitting
 - Balance queries with proper decimal handling (6 decimals for USDT)
-- Safety guard: `transferMaxFee` prevents runaway gas costs
 
 ### Budget Guardian
 - **Session budget**: configurable max spend per session (default: 50 USDT)
 - **Per-tip cap**: max amount per individual tip (default: 5 USDT)
 - **Rate limiting**: minimum interval between tips (default: 30s)
+- Tip mutex prevents concurrent transactions from overspending
 - Budget resets available from dashboard
-
-### Smart Split
-Each tip is automatically distributed:
-- 80% → Creator
-- 10% → Editor/collaborator
-- 10% → Community pool
-
-Split percentages are configurable via API.
 
 ### Real-time Dashboard
 - Live agent log via Server-Sent Events (SSE)
 - Wallet balance and address display
 - Budget progress bar with color-coded thresholds
-- Start/stop agent, trigger single events, reset budget
-- Last decision panel showing score, amount, and reasoning
+- Rumble stream connection status
+- Start/stop agent, trigger test events, reset budget
+- Decision history with score, amount, and reasoning
+
+## Smart Contracts
+
+### TipSplitter.sol
+Atomic tip splitting with configurable basis points (bps). Uses OpenZeppelin SafeERC20 and ReentrancyGuard.
+
+### MockUSDT.sol
+Test ERC-20 with 6 decimals and public `mint()` for Sepolia testing.
+
+Deploy both:
+```bash
+cd contracts
+npx hardhat ignition deploy ignition/modules/TipSplitter.ts --network sepolia
+```
 
 ## API Reference
 
@@ -170,20 +194,26 @@ Reset budget or update config.
 ### `GET /api/events`
 SSE stream of real-time agent log entries.
 
+### `GET /api/stats`
+Agent statistics and decision history.
+
+### `GET/POST /api/rumble`
+Start/stop Rumble live stream poller.
+
 ## Third-Party Services
 
 | Service | Purpose |
 |---|---|
-| [Anthropic Claude API](https://anthropic.com) | LLM reasoning for event evaluation |
+| [Groq](https://groq.com) | LLM inference (Llama 4 Scout) for event evaluation |
 | [dRPC](https://drpc.org) | Ethereum RPC provider (Sepolia) |
 | [Tether WDK](https://docs.wallet.tether.io) | Non-custodial wallet SDK |
+| [Rumble](https://rumble.com) | Live streaming platform + API |
 
 ## Known Limitations
 
-- Mock event simulator — real Rumble stream event integration requires Rumble API access
-- Editor and community pool recipient addresses are placeholders
 - Budget state is in-memory (resets on server restart)
 - Single EVM chain at a time (configurable via env)
+- Rumble API data only available during active live streams
 
 ## License
 

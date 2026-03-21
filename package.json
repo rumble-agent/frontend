@@ -1,6 +1,7 @@
 {
-  "name": "frontend",
+  "name": "rumble-pulse-agent",
   "version": "0.1.0",
+  "description": "Autonomous AI tipping agent for Rumble creators — powered by Groq Llama 4 and Tether WDK",
   "private": true,
   "scripts": {
     "dev": "next dev",
