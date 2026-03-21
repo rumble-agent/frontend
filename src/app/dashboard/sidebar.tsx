@@ -1,9 +1,7 @@
 "use client";
 
 import { useDashboard } from "./use-dashboard";
-import { isValidAddress } from "./types";
-
-const EXPLORER = "https://sepolia.etherscan.io";
+import { isValidAddress, EXPLORER } from "./types";
 
 function truncAddr(addr: string): string {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;

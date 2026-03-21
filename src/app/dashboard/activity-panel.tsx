@@ -1,9 +1,7 @@
 "use client";
 
 import { useDashboard } from "./use-dashboard";
-import { LOG_COLORS, EVENT_LABELS } from "./types";
-
-const EXPLORER = "https://sepolia.etherscan.io";
+import { LOG_COLORS, EVENT_LABELS, EXPLORER } from "./types";
 
 export function ActivityPanel() {
   const { activeTab, setActiveTab, stats, logs, exportLogs, logEndRef, logContainerRef } = useDashboard();

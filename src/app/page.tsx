@@ -1,7 +1,11 @@
 import { Nav } from "./landing/nav";
 import { HeroSection } from "./landing/hero";
 import { Marquee } from "./landing/marquee";
-import { HowItWorks, FeaturesSection, StackSection, CTABanner, Footer } from "./landing/sections";
+import { HowItWorks } from "./landing/how-it-works";
+import { FeaturesSection } from "./landing/features";
+import { StackSection } from "./landing/stack";
+import { CTABanner } from "./landing/cta-banner";
+import { Footer } from "./landing/footer";
 import { PipelineSection } from "./landing/pipeline";
 import { AgentLogSection } from "./landing/agent-log";
 

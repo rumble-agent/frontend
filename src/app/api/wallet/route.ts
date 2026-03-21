@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWalletState, getBudget, updateBudgetConfig, resetBudget, getCreatorAddress, setCreatorAddress } from "@/lib/wdk";
 import { resetAgentState } from "@/lib/agent";
 import { checkAuth } from "@/lib/auth";
+import { isValidAddress } from "@/lib/types";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -48,8 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (raw.creator_address !== undefined) {
-      const addrRegex = /^0x[a-fA-F0-9]{40}$/;
-      if (!addrRegex.test(raw.creator_address)) {
+      if (!isValidAddress(raw.creator_address)) {
         return NextResponse.json({ error: "Invalid creator address" }, { status: 400 });
       }
       setCreatorAddress(raw.creator_address);
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     console.error("POST /api/wallet error:", err);
     return NextResponse.json(
       { error: "Failed to update wallet" },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }

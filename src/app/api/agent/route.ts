@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { evaluateEvent, emit, getNextMockEvent, updateLastDecisionTx } from "@/lib/agent";
 import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 import { checkAuth } from "@/lib/auth";
+import { isValidAddress } from "@/lib/types";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     const event = body.event ?? getNextMockEvent();
     const creatorAddress = body.creator_address ?? getCreatorAddress();
 
-    if (!creatorAddress || !/^0x[a-fA-F0-9]{40}$/.test(creatorAddress)) {
+    if (!creatorAddress || !isValidAddress(creatorAddress)) {
       return NextResponse.json({ error: "Creator address not configured" }, { status: 400 });
     }
 

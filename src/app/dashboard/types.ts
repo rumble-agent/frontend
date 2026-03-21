@@ -72,6 +72,6 @@ export const EVENT_LABELS: Record<string, string> = {
   sentiment_shift: "Sentiment",
 };
 
-export function isValidAddress(addr: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(addr);
-}
+export const EXPLORER = "https://sepolia.etherscan.io";
+
+export { isValidAddress } from "@/lib/types";

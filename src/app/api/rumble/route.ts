@@ -3,6 +3,7 @@ import { isRumbleConfigured, getRumbleStatus, startRumblePoller, stopRumblePolle
 import { evaluateEvent, updateLastDecisionTx } from "@/lib/agent";
 import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 import { checkAuth } from "@/lib/auth";
+import { isValidAddress } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       }
 
       const creatorAddress = body.creator_address ?? getCreatorAddress();
-      if (!creatorAddress || !/^0x[a-fA-F0-9]{40}$/.test(creatorAddress)) {
+      if (!creatorAddress || !isValidAddress(creatorAddress)) {
         return NextResponse.json({ error: "Creator address not configured" }, { status: 400 });
       }
       const executeOnChain = body.execute ?? false;
