@@ -35,18 +35,52 @@ const PIPELINE_STEPS = [
   },
 ] as const;
 
-const COLOR_MAP: Record<string, { label: string; dot: string; text: string }> = {
-  violet: { label: "text-violet-400", dot: "bg-violet-400/60", text: "text-violet-400/80" },
-  amber: { label: "text-amber-400", dot: "bg-amber-400/60", text: "text-amber-400/80" },
-  emerald: { label: "text-emerald-400", dot: "bg-emerald-400/60", text: "text-emerald-400/80" },
-  cyan: { label: "text-[#00D4FF]", dot: "bg-[#00D4FF]/60", text: "text-[#00D4FF]/80" },
+const COLOR_MAP: Record<string, {
+  label: string;
+  dot: string;
+  text: string;
+  border: string;
+  glow: string;
+  bg: string;
+  num: string;
+}> = {
+  violet: {
+    label: "text-violet-400",
+    dot: "bg-violet-400/60",
+    text: "text-violet-400/80",
+    border: "border-violet-500/30",
+    glow: "shadow-[0_0_12px_rgba(139,92,246,0.15)]",
+    bg: "bg-violet-500/10",
+    num: "text-violet-400/40",
+  },
+  amber: {
+    label: "text-amber-400",
+    dot: "bg-amber-400/60",
+    text: "text-amber-400/80",
+    border: "border-amber-500/30",
+    glow: "shadow-[0_0_12px_rgba(245,158,11,0.15)]",
+    bg: "bg-amber-500/10",
+    num: "text-amber-400/40",
+  },
+  emerald: {
+    label: "text-emerald-400",
+    dot: "bg-emerald-400/60",
+    text: "text-emerald-400/80",
+    border: "border-emerald-500/30",
+    glow: "shadow-[0_0_12px_rgba(16,185,129,0.15)]",
+    bg: "bg-emerald-500/10",
+    num: "text-emerald-400/40",
+  },
+  cyan: {
+    label: "text-[#00D4FF]",
+    dot: "bg-[#00D4FF]/60",
+    text: "text-[#00D4FF]/80",
+    border: "border-[#00D4FF]/30",
+    glow: "shadow-[0_0_12px_rgba(0,212,255,0.15)]",
+    bg: "bg-[#00D4FF]/10",
+    num: "text-[#00D4FF]/40",
+  },
 };
-
-const ARROW = (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M4 8H12M12 8L9 5M12 8L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 export function PipelineSection() {
   return (
@@ -65,37 +99,99 @@ export function PipelineSection() {
           </p>
         </Reveal>
 
-        {/* Pipeline flow */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Desktop: horizontal connector line behind cards */}
+        <div className="hidden lg:block relative mb-8">
+          {/* Connector line */}
+          <div className="absolute top-0 left-[12.5%] right-[12.5%] flex items-center">
+            <div className="w-full h-px bg-gradient-to-r from-violet-500/30 via-amber-500/20 via-emerald-500/20 to-[#00D4FF]/30" />
+          </div>
+
+          {/* Step nodes on the line */}
+          <div className="relative grid grid-cols-4 gap-4">
+            {PIPELINE_STEPS.map((step, i) => {
+              const colors = COLOR_MAP[step.color];
+              return (
+                <Reveal key={step.stage} delay={i + 1}>
+                  <div className="flex flex-col items-center">
+                    {/* Node dot */}
+                    <div className={`relative z-10 w-8 h-8 rounded-full ${colors.bg} ${colors.border} border flex items-center justify-center ${colors.glow} -mt-4`}>
+                      <span className={`font-mono text-[10px] font-bold ${colors.label}`}>
+                        {step.stage}
+                      </span>
+                    </div>
+
+                    {/* Card */}
+                    <div className={`mt-4 w-full rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-[250ms] hover:border-white/[0.12] hover:bg-white/[0.03] hover:-translate-y-1 ${colors.glow.replace('0.15', '0')} hover:${colors.glow} active:translate-y-0 active:scale-[0.995] group`}>
+                      {/* Colored top accent */}
+                      <div className={`h-px w-full ${colors.dot} mb-4 opacity-60 group-hover:opacity-100 transition-opacity`} />
+
+                      <span className={`font-mono text-[10px] font-bold uppercase tracking-wider ${colors.label}`}>
+                        {step.label}
+                      </span>
+                      <h3 className="font-heading text-base font-bold tracking-[-0.01em] mt-2 mb-3">
+                        {step.title}
+                      </h3>
+                      <ul className="space-y-1.5 mb-4">
+                        {step.items.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-[12px] text-zinc-500">
+                            <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${colors.dot}`} />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className={`font-mono text-[11px] px-3 py-2 rounded-md border border-white/[0.04] bg-white/[0.02] ${colors.text}`}>
+                        {step.example}
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tablet + Mobile: vertical flow */}
+        <div className="lg:hidden space-y-3">
           {PIPELINE_STEPS.map((step, i) => {
             const colors = COLOR_MAP[step.color];
             return (
               <Reveal key={step.stage} delay={i + 1}>
-                <div className="relative group">
+                <div className="relative">
+                  {/* Vertical connector */}
                   {i < 3 && (
-                    <div className="hidden lg:block absolute -right-2 top-1/2 -translate-y-1/2 z-10 text-zinc-700">
-                      {ARROW}
-                    </div>
+                    <div className="absolute left-5 top-full w-px h-3 bg-gradient-to-b from-white/[0.08] to-transparent z-0" />
                   )}
-                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 h-full transition-all duration-[250ms] hover:border-white/[0.12] hover:bg-white/[0.03] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.995]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className={`font-mono text-[10px] font-bold uppercase tracking-wider ${colors.label}`}>
-                        {step.label}
-                      </span>
-                    </div>
-                    <h3 className="font-heading text-base font-bold tracking-[-0.01em] mb-3">
-                      {step.title}
-                    </h3>
-                    <ul className="space-y-1.5 mb-4">
-                      {step.items.map((item) => (
-                        <li key={item} className="flex items-start gap-2 text-[12px] text-zinc-500">
-                          <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${colors.dot}`} />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className={`font-mono text-[11px] px-3 py-2 rounded-md border border-white/[0.04] bg-white/[0.02] ${colors.text}`}>
-                      {step.example}
+
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-[250ms] hover:border-white/[0.12] hover:bg-white/[0.03] active:scale-[0.995]">
+                    <div className="flex items-start gap-4">
+                      {/* Step number badge */}
+                      <div className={`shrink-0 w-10 h-10 rounded-lg ${colors.bg} ${colors.border} border flex items-center justify-center`}>
+                        <span className={`font-mono text-xs font-bold ${colors.label}`}>
+                          {step.stage}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`font-mono text-[10px] font-bold uppercase tracking-wider ${colors.label}`}>
+                            {step.label}
+                          </span>
+                        </div>
+                        <h3 className="font-heading text-base font-bold tracking-[-0.01em] mb-2">
+                          {step.title}
+                        </h3>
+                        <ul className="space-y-1 mb-3">
+                          {step.items.map((item) => (
+                            <li key={item} className="flex items-start gap-2 text-[12px] text-zinc-500">
+                              <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${colors.dot}`} />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                        <div className={`font-mono text-[11px] px-3 py-2 rounded-md border border-white/[0.04] bg-white/[0.02] ${colors.text}`}>
+                          {step.example}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -104,16 +200,22 @@ export function PipelineSection() {
           })}
         </div>
 
-        {/* Mobile flow connector hint */}
+        {/* Flow summary - mobile only */}
         <Reveal delay={1}>
-          <div className="mt-8 flex items-center justify-center gap-3 text-zinc-600 sm:hidden">
-            <span className="font-mono text-[11px]">Event</span>
-            {ARROW}
-            <span className="font-mono text-[11px]">Brain</span>
-            {ARROW}
-            <span className="font-mono text-[11px]">Guard</span>
-            {ARROW}
-            <span className="font-mono text-[11px]">Tip</span>
+          <div className="mt-8 flex items-center justify-center gap-2 text-zinc-600 sm:hidden">
+            {PIPELINE_STEPS.map((step, i) => {
+              const colors = COLOR_MAP[step.color];
+              return (
+                <div key={step.stage} className="flex items-center gap-2">
+                  <span className={`font-mono text-[11px] ${colors.label}`}>{step.label.split(" ")[0]}</span>
+                  {i < 3 && (
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-zinc-700" aria-hidden="true">
+                      <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Reveal>
       </div>
