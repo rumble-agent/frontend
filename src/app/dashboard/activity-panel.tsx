@@ -3,6 +3,8 @@
 import { useDashboard } from "./use-dashboard";
 import { LOG_COLORS, EVENT_LABELS } from "./types";
 
+const EXPLORER = "https://sepolia.etherscan.io";
+
 export function ActivityPanel() {
   const { activeTab, setActiveTab, fetchStats, stats, logs, exportLogs, logEndRef, logContainerRef } = useDashboard();
 
@@ -69,53 +71,71 @@ export function ActivityPanel() {
               </div>
             ) : (
               <div className="space-y-2">
-                {stats.history.map((record) => (
-                  <div
-                    key={record.id}
-                    className={`rounded-lg border-l-2 p-4 transition-colors duration-[200ms] ${
-                      record.decision.should_tip
-                        ? "border-l-emerald-500 bg-emerald-500/[0.02] border-y border-r border-emerald-500/10 hover:bg-emerald-500/[0.04]"
-                        : "border-l-zinc-700 bg-white/[0.01] border-y border-r border-white/[0.04] hover:bg-white/[0.03]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium font-mono ${
-                          record.decision.should_tip
-                            ? "bg-emerald-500/10 text-emerald-400"
-                            : "bg-zinc-800 text-zinc-500"
-                        }`}>
-                          {record.decision.should_tip ? `+${record.decision.amount} USDT` : "SKIP"}
-                        </span>
-                        <span className="text-zinc-500 text-[11px]">
-                          {EVENT_LABELS[record.decision.event.type] ?? record.decision.event.type}
-                        </span>
-                        {record.usedLLM && (
-                          <span className="text-amber-400/50 text-[9px] uppercase tracking-wider font-mono">LLM</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-10 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                record.decision.score >= 0.7 ? "bg-emerald-400" : record.decision.score >= 0.4 ? "bg-amber-400" : "bg-zinc-500"
-                              }`}
-                              style={{ width: `${record.decision.score * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-zinc-500 text-[11px] font-mono">{record.decision.score}</span>
+                {stats.history.map((record) => {
+                  const tx = record.transactions?.[0];
+                  const hasTx = tx && tx.success && tx.tx_hash;
+
+                  return (
+                    <div
+                      key={record.id}
+                      className={`rounded-lg border-l-2 p-4 transition-colors duration-[200ms] ${
+                        record.decision.should_tip
+                          ? "border-l-emerald-500 bg-emerald-500/[0.02] border-y border-r border-emerald-500/10 hover:bg-emerald-500/[0.04]"
+                          : "border-l-zinc-700 bg-white/[0.01] border-y border-r border-white/[0.04] hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium font-mono ${
+                            record.decision.should_tip
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-zinc-800 text-zinc-500"
+                          }`}>
+                            {record.decision.should_tip ? `+${record.decision.amount} USDT` : "SKIP"}
+                          </span>
+                          <span className="text-zinc-500 text-[11px]">
+                            {EVENT_LABELS[record.decision.event.type] ?? record.decision.event.type}
+                          </span>
+                          {record.usedLLM && (
+                            <span className="text-amber-400/50 text-[9px] uppercase tracking-wider font-mono">LLM</span>
+                          )}
+                          {hasTx && (
+                            <a
+                              href={`${EXPLORER}/tx/${tx.tx_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[9px] text-emerald-400/50 hover:text-emerald-400 transition-colors font-mono"
+                            >
+                              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-3M10 2h4v4M16 0L7 9" />
+                              </svg>
+                              TX
+                            </a>
+                          )}
                         </div>
-                        <span className="text-zinc-700 text-[10px] font-mono">
-                          {new Date(record.timestamp).toLocaleTimeString("en-US", { hour12: false })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-10 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  record.decision.score >= 0.7 ? "bg-emerald-400" : record.decision.score >= 0.4 ? "bg-amber-400" : "bg-zinc-500"
+                                }`}
+                                style={{ width: `${record.decision.score * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-zinc-500 text-[11px] font-mono">{record.decision.score}</span>
+                          </div>
+                          <span className="text-zinc-700 text-[10px] font-mono">
+                            {new Date(record.timestamp).toLocaleTimeString("en-US", { hour12: false })}
+                          </span>
+                        </div>
                       </div>
+                      <p className="text-zinc-500 text-[11px] leading-relaxed font-mono">
+                        {record.decision.reasoning}
+                      </p>
                     </div>
-                    <p className="text-zinc-500 text-[11px] leading-relaxed font-mono">
-                      {record.decision.reasoning}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

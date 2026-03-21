@@ -28,6 +28,11 @@ export interface WalletState {
   balance: number;
   currency: string;
   chain: string;
+  eth_balance: number;
+  contracts: {
+    usdt: string | null;
+    tip_splitter: string | null;
+  };
 }
 
 /* ─── Budget Config ─── */

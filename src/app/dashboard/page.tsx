@@ -161,7 +161,7 @@ function DashboardView() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-white/[0.12] hover:bg-white/[0.03]">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Events</p>
           <p className="text-xl font-bold font-mono text-white mt-0.5">{s?.total_events_evaluated ?? 0}</p>
@@ -175,6 +175,10 @@ function DashboardView() {
           <p className="text-xl font-bold font-mono text-[#00D4FF] mt-0.5">
             {s?.total_amount_tipped ?? 0} <span className="text-xs text-zinc-600">USDT</span>
           </p>
+        </div>
+        <div className="rounded-lg border border-violet-500/10 bg-violet-500/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-violet-500/20 hover:bg-violet-500/[0.04]">
+          <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Success Rate</p>
+          <p className="text-xl font-bold font-mono text-violet-400 mt-0.5">{s?.success_rate ?? 0}<span className="text-xs text-zinc-600">%</span></p>
         </div>
         <div className="rounded-lg border border-amber-500/10 bg-amber-500/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-amber-500/20 hover:bg-amber-500/[0.04]">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Avg Score</p>

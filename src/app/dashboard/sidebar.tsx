@@ -3,6 +3,12 @@
 import { useDashboard } from "./use-dashboard";
 import { isValidAddress } from "./types";
 
+const EXPLORER = "https://sepolia.etherscan.io";
+
+function truncAddr(addr: string): string {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
 export function Sidebar() {
   const {
     isRunning, triggerLoading, triggerEvent, toggleAutoRun, toggleRumble,
@@ -10,6 +16,8 @@ export function Sidebar() {
     creatorAddress, editingCreator, setEditingCreator, creatorDraft,
     setCreatorDraft, creatorSaving, saveCreator, budget, spent, maxSession, spentPercent,
   } = useDashboard();
+
+  const contracts = wallet?.wallet.contracts;
 
   return (
     <>
@@ -60,7 +68,7 @@ export function Sidebar() {
 
       {/* Wallet */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-[250ms] hover:border-white/[0.10]">
-        <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Wallet</p>
+        <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Agent Wallet</p>
         {walletError ? (
           <div className="font-mono text-[12px] text-red-400">
             {walletError}
@@ -71,7 +79,21 @@ export function Sidebar() {
             <div className="text-xl font-bold text-white">
               {wallet.wallet.balance.toFixed(2)} <span className="text-sm text-zinc-500">{wallet.wallet.currency}</span>
             </div>
-            <div className="text-[11px] text-zinc-600 mt-1 truncate" title={wallet.wallet.address}>{wallet.wallet.address}</div>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[11px] text-zinc-600">{wallet.wallet.eth_balance?.toFixed(4) ?? "0"} ETH</span>
+              {(wallet.wallet.eth_balance ?? 0) < 0.001 && (
+                <span className="text-[9px] text-amber-400/80 uppercase tracking-wider">Low gas</span>
+              )}
+            </div>
+            <a
+              href={`${EXPLORER}/address/${wallet.wallet.address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-zinc-600 hover:text-[#00D4FF] mt-1 truncate block transition-colors"
+              title={wallet.wallet.address}
+            >
+              {wallet.wallet.address}
+            </a>
             <div className="text-[11px] text-zinc-700 mt-0.5">{wallet.wallet.chain}</div>
           </div>
         ) : (
@@ -81,6 +103,50 @@ export function Sidebar() {
           </div>
         )}
       </div>
+
+      {/* Contracts */}
+      {contracts && (contracts.usdt || contracts.tip_splitter) && (
+        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.02] p-5">
+          <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">On-Chain</p>
+          <div className="space-y-2 font-mono text-[11px]">
+            {contracts.tip_splitter && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-zinc-400">TipSplitter</span>
+                </div>
+                <a
+                  href={`${EXPLORER}/address/${contracts.tip_splitter}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-400/70 hover:text-emerald-400 transition-colors"
+                >
+                  {truncAddr(contracts.tip_splitter)}
+                </a>
+              </div>
+            )}
+            {contracts.usdt && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00D4FF]" />
+                  <span className="text-zinc-400">USDT</span>
+                </div>
+                <a
+                  href={`${EXPLORER}/address/${contracts.usdt}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#00D4FF]/70 hover:text-[#00D4FF] transition-colors"
+                >
+                  {truncAddr(contracts.usdt)}
+                </a>
+              </div>
+            )}
+            <p className="text-zinc-700 text-[10px] mt-1">
+              {contracts.tip_splitter ? "Tips routed via smart contract" : "Direct ERC-20 transfer"}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Creator */}
       <div className={`rounded-xl border p-5 ${
@@ -128,7 +194,15 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="font-mono text-[12px]">
-            <div className="text-[#00D4FF] truncate" title={creatorAddress}>{creatorAddress}</div>
+            <a
+              href={`${EXPLORER}/address/${creatorAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#00D4FF] hover:text-[#00D4FF]/80 truncate block transition-colors"
+              title={creatorAddress}
+            >
+              {creatorAddress}
+            </a>
             <p className="text-zinc-600 text-[11px] mt-1">Tips go to this address</p>
           </div>
         )}

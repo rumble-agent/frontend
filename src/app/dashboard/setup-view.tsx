@@ -58,9 +58,23 @@ export function SetupView() {
               <div>
                 <p className="text-white">
                   {wallet.wallet.balance.toFixed(2)} <span className="text-zinc-500">{wallet.wallet.currency}</span>
+                  <span className="text-zinc-600 ml-3">{wallet.wallet.eth_balance?.toFixed(4) ?? "0"} ETH</span>
                 </p>
-                <p className="text-zinc-600 truncate mt-0.5" title={wallet.wallet.address}>{wallet.wallet.address}</p>
-                <p className="text-zinc-700 mt-0.5">{wallet.wallet.chain}</p>
+                <a
+                  href={`https://sepolia.etherscan.io/address/${wallet.wallet.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-600 hover:text-[#00D4FF] truncate mt-0.5 block transition-colors"
+                  title={wallet.wallet.address}
+                >
+                  {wallet.wallet.address}
+                </a>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-zinc-700">{wallet.wallet.chain}</span>
+                  {wallet.wallet.contracts?.tip_splitter && (
+                    <span className="text-emerald-400/60 text-[10px]">TipSplitter active</span>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-zinc-600">

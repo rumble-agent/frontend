@@ -130,14 +130,25 @@ function fromUsdtUnits(units: bigint): number {
 export async function getWalletState(): Promise<WalletState> {
   const w = getWallet();
   const address = w.address;
+  const provider = w.provider;
 
   let balance = 0;
-  if (USDT_CONTRACT) {
+  let ethBalance = 0;
+
+  if (provider) {
+    // Fetch ETH balance (needed for gas)
+    try {
+      const ethRaw = await provider.getBalance(address);
+      ethBalance = Number(ethRaw) / 1e18;
+    } catch {
+      console.warn("ETH balance query failed");
+    }
+  }
+
+  if (USDT_CONTRACT && provider) {
     try {
       const erc20 = new Contract(USDT_CONTRACT, ERC20_ABI);
       const data = erc20.interface.encodeFunctionData("balanceOf", [address]);
-      const provider = w.provider;
-      if (!provider) throw new Error("No provider connected");
       const result: string = await provider.call({ to: USDT_CONTRACT, data });
       if (result && result !== "0x") {
         balance = fromUsdtUnits(BigInt(result));
@@ -147,7 +158,14 @@ export async function getWalletState(): Promise<WalletState> {
     }
   }
 
-  return { address, balance, currency: "USDT", chain: CHAIN };
+  return {
+    address, balance, currency: "USDT", chain: CHAIN,
+    eth_balance: Number(ethBalance.toFixed(6)),
+    contracts: {
+      usdt: USDT_CONTRACT || null,
+      tip_splitter: TIP_SPLITTER || null,
+    },
+  };
 }
 
 /** Send USDT tip — routes through TipSplitter contract if configured, otherwise direct ERC-20 transfer */

@@ -1,5 +1,12 @@
 export interface WalletData {
-  wallet: { address: string; balance: number; currency: string; chain: string };
+  wallet: {
+    address: string;
+    balance: number;
+    currency: string;
+    chain: string;
+    eth_balance: number;
+    contracts: { usdt: string | null; tip_splitter: string | null };
+  };
   budget: {
     spent_this_session: number;
     tips_count: number;
@@ -34,6 +41,7 @@ export interface StatsData {
       reasoning: string;
       event: { type: string; data: Record<string, unknown> };
     };
+    transactions: Array<{ success: boolean; tx_hash: string; amount: number; recipient: string; chain: string }>;
     usedLLM: boolean;
     timestamp: number;
   }>;
