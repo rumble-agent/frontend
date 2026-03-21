@@ -1,7 +1,5 @@
 import { subscribe, getLogHistory } from "@/lib/agent";
 
-export const dynamic = "force-dynamic";
-
 /* GET /api/events — SSE stream of agent log entries */
 export async function GET() {
   const encoder = new TextEncoder();

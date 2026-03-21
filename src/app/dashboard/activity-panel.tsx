@@ -6,7 +6,7 @@ import { LOG_COLORS, EVENT_LABELS } from "./types";
 const EXPLORER = "https://sepolia.etherscan.io";
 
 export function ActivityPanel() {
-  const { activeTab, setActiveTab, fetchStats, stats, logs, exportLogs, logEndRef, logContainerRef } = useDashboard();
+  const { activeTab, setActiveTab, stats, logs, exportLogs, logEndRef, logContainerRef } = useDashboard();
 
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden flex flex-col transition-colors duration-[250ms] hover:border-white/[0.10]" style={{ minHeight: "500px" }}>
@@ -18,7 +18,7 @@ export function ActivityPanel() {
             role="tab"
             aria-selected={activeTab === "activity"}
             aria-controls="panel-activity"
-            onClick={() => { setActiveTab("activity"); fetchStats(); }}
+            onClick={() => setActiveTab("activity")}
             className={`px-5 py-3 text-[12px] font-medium transition-colors border-b-2 ${
               activeTab === "activity" ? "text-white border-[#00D4FF]" : "text-zinc-500 border-transparent hover:text-zinc-300"
             }`}
@@ -74,6 +74,7 @@ export function ActivityPanel() {
                 {stats.history.map((record) => {
                   const tx = record.transactions?.[0];
                   const hasTx = tx && tx.success && tx.tx_hash;
+                  const txFailed = tx && !tx.success;
 
                   return (
                     <div
@@ -104,13 +105,23 @@ export function ActivityPanel() {
                               href={`${EXPLORER}/tx/${tx.tx_hash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[9px] text-emerald-400/50 hover:text-emerald-400 transition-colors font-mono"
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-[10px] text-emerald-400 hover:bg-emerald-500/20 transition-colors font-mono"
                             >
                               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-3M10 2h4v4M16 0L7 9" />
                               </svg>
-                              TX
+                              Verify TX
                             </a>
+                          )}
+                          {txFailed && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 text-[10px] text-red-400 font-mono">
+                              TX Failed
+                            </span>
+                          )}
+                          {record.decision.should_tip && !tx && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-500 font-mono">
+                              Pending
+                            </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2">

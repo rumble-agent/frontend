@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { evaluateEvent, getNextMockEvent, updateLastDecisionTx } from "@/lib/agent";
+import { evaluateEvent, emit, getNextMockEvent, updateLastDecisionTx } from "@/lib/agent";
 import { sendTip, canTip, getCreatorAddress } from "@/lib/wdk";
 import { checkAuth } from "@/lib/auth";
 import { z } from "zod";
@@ -69,14 +69,24 @@ export async function POST(req: NextRequest) {
         });
       }
       try {
+        emit("sys", `Executing on-chain tip: ${decision.amount} USDT → ${creatorAddress.slice(0, 6)}...${creatorAddress.slice(-4)}`);
+        emit("inf", "Waiting for on-chain confirmation (typically 15-45s on Sepolia)...");
         const txResults = await sendTip(decision.amount, creatorAddress);
         updateLastDecisionTx(txResults);
+        const tx = txResults[0];
+        if (tx?.success && tx.tx_hash) {
+          emit("ok", `TX confirmed: ${tx.tx_hash}`);
+        } else {
+          emit("err", `TX failed: ${tx?.tx_hash ? "reverted" : "no hash returned"}`);
+        }
         return NextResponse.json({ decision, transactions: txResults });
       } catch (err) {
+        const msg = err instanceof Error ? err.message : "Transaction failed";
+        emit("err", `TX error: ${msg}`);
         return NextResponse.json({
           decision,
           transactions: [],
-          error: err instanceof Error ? err.message : "Transaction failed",
+          error: msg,
         });
       }
     }

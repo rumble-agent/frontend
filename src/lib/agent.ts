@@ -68,6 +68,18 @@ export function getDecisionHistory(): DecisionRecord[] {
   return [...decisionHistory].reverse();
 }
 
+export function resetAgentState(): void {
+  decisionHistory.length = 0;
+  logHistory.length = 0;
+  totalEventsEvaluated = 0;
+  totalTipsSent = 0;
+  totalTipsSkipped = 0;
+  totalAmountTipped = 0;
+  totalScoreSum = 0;
+  llmUsageCount = 0;
+  emit("sys", "Agent state reset — ready for new session");
+}
+
 export function updateLastDecisionTx(transactions: { success: boolean; tx_hash: string; amount: number; recipient: string; chain: string; timestamp: number }[]) {
   if (decisionHistory.length === 0) return;
   decisionHistory[decisionHistory.length - 1].transactions = transactions;

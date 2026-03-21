@@ -126,32 +126,112 @@ function useDashboardState() {
   }, [isRunning, rumble?.polling, fetchStats, fetchWallet]);
 
   /* ─── Actions ─── */
+  const addLog = useCallback((type: AgentLogEntry["type"], message: string) => {
+    const entry = {
+      id: `cl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: Date.now(),
+      type,
+      message,
+    };
+    setLogs((prev) => (prev.length >= 200 ? [...prev.slice(-149), entry] : [...prev, entry]));
+  }, []);
+
   const triggerEvent = useCallback(async () => {
     if (inflightRef.current) return;
     inflightRef.current = true;
     setTriggerLoading(true);
     setActionError(null);
+    addLog("sys", "Triggering agent evaluation...");
+
+    // Progress messages while waiting for response
+    const progressTimers = [
+      setTimeout(() => addLog("inf", "Evaluating event with AI..."), 2000),
+      setTimeout(() => addLog("inf", "Waiting for on-chain confirmation..."), 8000),
+      setTimeout(() => addLog("inf", "Still confirming on Sepolia (this is normal)..."), 25000),
+    ];
+    const clearProgress = () => progressTimers.forEach(clearTimeout);
+
     try {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ execute: true, creator_address: creatorAddress || undefined }),
+        signal: AbortSignal.timeout(90000),
       });
+      clearProgress();
       if (!res.ok) {
         const err = await res.json();
         setActionError(err.error ?? "Agent request failed");
+        addLog("err", err.error ?? "Agent request failed");
         return;
       }
-      await res.json();
+      const data = await res.json();
+
+      // Inject log entries from response (SSE may not work on serverless)
+      if (data.decision) {
+        const d = data.decision;
+        const usedLLM = Boolean(d.reasoning && !d.reasoning.startsWith("["));
+        addLog("evt", `Event: ${d.event?.type ?? "unknown"} — ${JSON.stringify(d.event?.data ?? {})}`);
+        addLog("llm", usedLLM ? "Evaluated with Groq LLM" : "Rule-based scoring");
+        if (d.should_tip) {
+          addLog("act", `→ Tip ${d.amount} USDT | ${d.reasoning}`);
+          const tx = data.transactions?.[0];
+          if (tx?.success && tx.tx_hash) {
+            addLog("ok", `TX confirmed: ${tx.tx_hash}`);
+          } else if (tx && !tx.success) {
+            addLog("err", "TX failed on-chain");
+          }
+        } else {
+          addLog("llm", `Skipped: ${d.reasoning}`);
+        }
+
+        // Optimistically inject into Activity + Stats
+        const record = {
+          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          decision: d,
+          transactions: data.transactions ?? [],
+          usedLLM,
+          timestamp: Date.now(),
+        };
+        setStats((prev) => {
+          const prevHistory = prev?.history ?? [];
+          const prevStats = prev?.stats ?? {
+            total_events_evaluated: 0, total_tips_sent: 0, total_tips_skipped: 0,
+            total_amount_tipped: 0, average_score: 0, success_rate: 0, llm_usage_rate: 0, session_start: Date.now(),
+          };
+          const newEval = prevStats.total_events_evaluated + 1;
+          const newTips = prevStats.total_tips_sent + (d.should_tip ? 1 : 0);
+          const newSkips = prevStats.total_tips_skipped + (d.should_tip ? 0 : 1);
+          const newAmount = prevStats.total_amount_tipped + (d.should_tip ? d.amount : 0);
+          return {
+            stats: {
+              ...prevStats,
+              total_events_evaluated: newEval,
+              total_tips_sent: newTips,
+              total_tips_skipped: newSkips,
+              total_amount_tipped: Number(newAmount.toFixed(2)),
+              average_score: Number(((prevStats.average_score * prevStats.total_events_evaluated + d.score) / newEval).toFixed(2)),
+              success_rate: Number(((newTips / newEval) * 100).toFixed(1)),
+            },
+            history: [record, ...prevHistory],
+          };
+        });
+      }
+
+      if (data.error) {
+        addLog("wrn", data.error);
+      }
+
       fetchWallet();
-      fetchStats();
     } catch {
+      clearProgress();
       setActionError("Network error — agent unreachable");
+      addLog("err", "Network error — agent unreachable");
     } finally {
       inflightRef.current = false;
       setTriggerLoading(false);
     }
-  }, [fetchWallet, fetchStats, creatorAddress]);
+  }, [fetchWallet, creatorAddress, addLog]);
 
   // Keep ref in sync so setInterval always calls latest triggerEvent
   triggerRef.current = triggerEvent;
@@ -205,6 +285,8 @@ function useDashboardState() {
         setActionError(err.error ?? "Failed to reset budget");
         return;
       }
+      setLogs([]);
+      seenIdsRef.current.clear();
       fetchWallet();
       fetchStats();
     } catch {

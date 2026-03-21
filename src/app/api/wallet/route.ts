@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWalletState, getBudget, updateBudgetConfig, resetBudget, getCreatorAddress, setCreatorAddress } from "@/lib/wdk";
+import { resetAgentState } from "@/lib/agent";
 import { checkAuth } from "@/lib/auth";
 import { z } from "zod";
 
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
 
     if (raw.action === "reset_budget") {
       resetBudget();
+      resetAgentState();
       return NextResponse.json({ message: "Budget reset", budget: getBudget() });
     }
 
