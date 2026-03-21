@@ -93,8 +93,9 @@ function useDashboardState() {
 
   /* ─── Auto-scroll (log tab only) ─── */
   useEffect(() => {
-    if (activeTab === "log" && !userScrolledRef.current) {
-      logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const c = logContainerRef.current;
+    if (activeTab === "log" && !userScrolledRef.current && c) {
+      c.scrollTo({ top: c.scrollHeight, behavior: "smooth" });
     }
   }, [logs, activeTab]);
 
