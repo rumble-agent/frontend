@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const NAV_LINKS = [
   { label: "How It Works", href: "#how-it-works" },
@@ -53,16 +53,19 @@ function MobileMenu({
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState("");
 
   const handleScroll = useCallback(() => {
     const scrollY = window.scrollY;
     setScrolled(scrollY > 20);
 
-    // Scroll progress
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    setScrollProgress(docHeight > 0 ? Math.min(scrollY / docHeight, 1) : 0);
+    // Scroll progress (direct DOM update, no re-render)
+    if (progressRef.current) {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? Math.min(scrollY / docHeight, 1) : 0;
+      progressRef.current.style.transform = `scaleX(${progress})`;
+    }
 
     // Active section detection
     const sections = NAV_LINKS.map((l) => l.href.slice(1));
@@ -92,8 +95,10 @@ export function Nav() {
       }`}
     >
       {/* Scroll progress bar */}
-      <div className="absolute bottom-0 left-0 h-[1px] bg-[#00D4FF]/50 transition-[width] duration-150"
-        style={{ width: `${scrollProgress * 100}%` }}
+      <div
+        ref={progressRef}
+        className="absolute bottom-0 left-0 w-full h-[1px] bg-[#00D4FF]/50 origin-left"
+        style={{ transform: "scaleX(0)" }}
       />
 
       {/* Bottom border with subtle glow when scrolled */}
