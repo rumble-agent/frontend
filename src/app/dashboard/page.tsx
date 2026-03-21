@@ -45,13 +45,24 @@ function DashboardContent() {
 /* ─── Header ─── */
 function Header() {
   const { isSetup, isRunning, rumble } = useDashboard();
+  const active = isRunning || rumble?.polling;
 
   return (
-    <header className="border-b border-white/[0.04] bg-[#050505]/80 backdrop-blur-xl sticky top-0 z-50">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+    <header className="border-b border-white/[0.04] bg-[#050505]/90 backdrop-blur-2xl sticky top-0 z-50">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/" className="font-heading font-bold text-[15px] tracking-[-0.02em] text-zinc-400 hover:text-white transition-colors">
-            Rumble Pulse
+          <a href="/" className="flex items-center gap-2 group">
+            <img
+              src="/rumble-icon.svg"
+              alt=""
+              width={22}
+              height={22}
+              className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity duration-200"
+              aria-hidden="true"
+            />
+            <span className="font-heading font-bold text-[15px] tracking-[-0.02em] text-zinc-400 group-hover:text-white transition-colors duration-200">
+              Rumble Pulse
+            </span>
           </a>
           <span className="text-zinc-700">/</span>
           <span className="font-heading font-bold text-[15px] tracking-[-0.02em]">
@@ -60,10 +71,12 @@ function Header() {
         </div>
         {!isSetup && (
           <div className="flex items-center gap-2">
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              isRunning || rumble?.polling ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"
+            <span className={`w-1.5 h-1.5 rounded-full transition-colors ${
+              active
+                ? "bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+                : "bg-zinc-600"
             }`} />
-            <span className="font-mono text-[11px] text-zinc-500">
+            <span className={`font-mono text-[11px] transition-colors ${active ? "text-emerald-400/70" : "text-zinc-500"}`}>
               {isRunning && rumble?.polling
                 ? "Agent + Rumble"
                 : isRunning
@@ -104,13 +117,13 @@ function DashboardView() {
               <button
                 onClick={triggerEvent}
                 disabled={triggerLoading}
-                className="px-4 py-2 text-[13px] font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white transition-all disabled:opacity-40"
+                className="btn-press px-4 py-2 text-[13px] font-medium rounded-lg text-zinc-400 border border-white/10 hover:border-white/20 hover:text-white transition-all disabled:opacity-40"
               >
                 {triggerLoading ? "Testing..." : "Test Event"}
               </button>
               <button
                 onClick={toggleAutoRun}
-                className="px-5 py-2 text-[13px] font-medium rounded-lg bg-white text-[#050505] hover:bg-zinc-200 transition-colors"
+                className="btn-press px-5 py-2 text-[13px] font-medium rounded-lg bg-white text-[#050505] hover:bg-zinc-200 transition-colors shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_0_16px_rgba(255,255,255,0.05)]"
               >
                 Start Agent
               </button>
@@ -123,7 +136,7 @@ function DashboardView() {
       {(isRunning || rumble?.polling) && (
         <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             <span className="text-[13px] text-emerald-400 font-medium">
               {isRunning && rumble?.polling
                 ? "Agent + Rumble active"
@@ -149,21 +162,21 @@ function DashboardView() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-white/[0.12] hover:bg-white/[0.03]">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Events</p>
           <p className="text-xl font-bold font-mono text-white mt-0.5">{s?.total_events_evaluated ?? 0}</p>
         </div>
-        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+        <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-emerald-500/20 hover:bg-emerald-500/[0.04]">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Tips Sent</p>
           <p className="text-xl font-bold font-mono text-emerald-400 mt-0.5">{s?.total_tips_sent ?? 0}</p>
         </div>
-        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+        <div className="rounded-lg border border-[#00D4FF]/10 bg-[#00D4FF]/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-[#00D4FF]/20 hover:bg-[#00D4FF]/[0.04]">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Total Tipped</p>
           <p className="text-xl font-bold font-mono text-[#00D4FF] mt-0.5">
             {s?.total_amount_tipped ?? 0} <span className="text-xs text-zinc-600">USDT</span>
           </p>
         </div>
-        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+        <div className="rounded-lg border border-amber-500/10 bg-amber-500/[0.02] px-4 py-3 transition-all duration-[250ms] hover:border-amber-500/20 hover:bg-amber-500/[0.04]">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">Avg Score</p>
           <p className="text-xl font-bold font-mono text-amber-400 mt-0.5">{s?.average_score ?? 0}</p>
         </div>

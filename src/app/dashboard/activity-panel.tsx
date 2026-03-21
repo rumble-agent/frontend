@@ -7,7 +7,7 @@ export function ActivityPanel() {
   const { activeTab, setActiveTab, fetchStats, stats, logs, exportLogs, logEndRef, logContainerRef } = useDashboard();
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden flex flex-col" style={{ minHeight: "500px" }}>
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden flex flex-col transition-colors duration-[250ms] hover:border-white/[0.10]" style={{ minHeight: "500px" }}>
       {/* Tab bar */}
       <div className="flex items-center border-b border-white/[0.04] shrink-0">
         <div className="flex" role="tablist" aria-label="Agent activity">
@@ -72,10 +72,10 @@ export function ActivityPanel() {
                 {stats.history.map((record) => (
                   <div
                     key={record.id}
-                    className={`rounded-lg border-l-2 p-4 ${
+                    className={`rounded-lg border-l-2 p-4 transition-colors duration-[200ms] ${
                       record.decision.should_tip
-                        ? "border-l-emerald-500 bg-emerald-500/[0.02] border-y border-r border-emerald-500/10"
-                        : "border-l-zinc-700 bg-white/[0.01] border-y border-r border-white/[0.04]"
+                        ? "border-l-emerald-500 bg-emerald-500/[0.02] border-y border-r border-emerald-500/10 hover:bg-emerald-500/[0.04]"
+                        : "border-l-zinc-700 bg-white/[0.01] border-y border-r border-white/[0.04] hover:bg-white/[0.03]"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1.5">

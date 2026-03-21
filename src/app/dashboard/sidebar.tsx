@@ -14,12 +14,12 @@ export function Sidebar() {
   return (
     <>
       {/* Controls */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-[250ms] hover:border-white/[0.10]">
         <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Controls</p>
         <div className="space-y-2">
           <button
             onClick={toggleAutoRun}
-            className={`w-full px-4 py-2.5 text-[13px] font-medium rounded-lg transition-colors ${
+            className={`btn-press w-full px-4 py-2.5 text-[13px] font-medium rounded-lg ${
               isRunning
                 ? "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
                 : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
@@ -31,7 +31,7 @@ export function Sidebar() {
             <button
               onClick={toggleRumble}
               disabled={rumbleLoading}
-              className={`w-full px-4 py-2.5 text-[13px] font-medium rounded-lg transition-colors disabled:opacity-40 ${
+              className={`btn-press w-full px-4 py-2.5 text-[13px] font-medium rounded-lg disabled:opacity-40 ${
                 rumble.polling
                   ? "bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20"
                   : "text-violet-400/60 border border-violet-500/10 hover:border-violet-500/20 hover:text-violet-400"
@@ -44,13 +44,13 @@ export function Sidebar() {
             <button
               onClick={triggerEvent}
               disabled={isRunning || triggerLoading}
-              className="flex-1 px-3 py-2 text-[12px] font-medium rounded-lg text-zinc-400 border border-white/[0.06] hover:border-white/10 hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-press flex-1 px-3 py-2 text-[12px] font-medium rounded-lg text-zinc-400 border border-white/[0.06] hover:border-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {triggerLoading ? "..." : "Test Event"}
             </button>
             <button
               onClick={resetBudget}
-              className="flex-1 px-3 py-2 text-[12px] font-medium rounded-lg text-zinc-400 border border-white/[0.06] hover:border-white/10 hover:text-white transition-all"
+              className="btn-press flex-1 px-3 py-2 text-[12px] font-medium rounded-lg text-zinc-400 border border-white/[0.06] hover:border-white/10 hover:text-white"
             >
               Reset Budget
             </button>
@@ -59,7 +59,7 @@ export function Sidebar() {
       </div>
 
       {/* Wallet */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-[250ms] hover:border-white/[0.10]">
         <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Wallet</p>
         {walletError ? (
           <div className="font-mono text-[12px] text-red-400">
@@ -135,7 +135,7 @@ export function Sidebar() {
       </div>
 
       {/* Budget */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-[250ms] hover:border-white/[0.10]">
         <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide mb-3">Budget</p>
         <div className="font-mono">
           <div className="flex justify-between text-[13px] mb-2">
@@ -166,7 +166,7 @@ export function Sidebar() {
           <div className="font-mono text-[12px]">
             {rumble.configured ? (
               <div className="flex items-center gap-2">
-                <span className={`w-1.5 h-1.5 rounded-full ${rumble.polling ? "bg-violet-400 animate-pulse" : "bg-zinc-600"}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${rumble.polling ? "bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(139,92,246,0.5)]" : "bg-zinc-600"}`} />
                 <span className={rumble.polling ? "text-violet-400" : "text-zinc-500"}>
                   {rumble.polling ? "Polling live stream" : "Ready to connect"}
                 </span>

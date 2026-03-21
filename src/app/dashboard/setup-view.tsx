@@ -29,12 +29,12 @@ export function SetupView() {
       {/* Steps */}
       <div className="space-y-3">
         {/* Step 1 — Wallet */}
-        <div className={`rounded-xl border p-5 transition-colors ${
+        <div className={`rounded-xl border p-5 transition-all duration-[250ms] hover:shadow-[0_4px_24px_rgba(0,0,0,0.2)] ${
           walletError
-            ? "border-red-500/20 bg-red-500/[0.02]"
+            ? "border-red-500/20 bg-red-500/[0.02] hover:border-red-500/30"
             : walletReady
-            ? "border-emerald-500/20 bg-emerald-500/[0.02]"
-            : "border-white/[0.06] bg-white/[0.02]"
+            ? "border-emerald-500/20 bg-emerald-500/[0.02] hover:border-emerald-500/30"
+            : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
         }`}>
           <div className="flex items-center gap-3 mb-2">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
@@ -72,10 +72,10 @@ export function SetupView() {
         </div>
 
         {/* Step 2 — Creator Wallet */}
-        <div className={`rounded-xl border p-5 transition-colors ${
+        <div className={`rounded-xl border p-5 transition-all duration-[250ms] hover:shadow-[0_4px_24px_rgba(0,0,0,0.2)] ${
           creatorValid
-            ? "border-emerald-500/20 bg-emerald-500/[0.02]"
-            : "border-[#00D4FF]/20 bg-[#00D4FF]/[0.02]"
+            ? "border-emerald-500/20 bg-emerald-500/[0.02] hover:border-emerald-500/30"
+            : "border-[#00D4FF]/20 bg-[#00D4FF]/[0.02] hover:border-[#00D4FF]/30"
         }`}>
           <div className="flex items-center gap-3 mb-2">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
@@ -108,7 +108,7 @@ export function SetupView() {
         </div>
 
         {/* Step 3 — Budget */}
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-[250ms] hover:border-white/[0.12] hover:shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center text-[11px] font-bold text-zinc-500">3</div>
             <h2 className="text-[14px] font-semibold text-zinc-400">Budget & Limits</h2>
@@ -128,7 +128,7 @@ export function SetupView() {
       <button
         onClick={saveCreator}
         disabled={!creatorValid || creatorSaving}
-        className="w-full mt-8 py-3 rounded-xl bg-white text-[#050505] font-semibold text-[14px] hover:bg-zinc-200 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+        className="cta-primary btn-press w-full mt-8 py-3 rounded-xl bg-white text-[#050505] font-semibold text-[14px] hover:bg-zinc-200 disabled:opacity-20 disabled:cursor-not-allowed"
       >
         {creatorSaving ? "Saving..." : "Continue to Dashboard"}
       </button>
