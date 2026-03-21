@@ -130,19 +130,26 @@ export function AgentLogSection() {
           {/* Right — Terminal */}
           <div className="lg:col-span-3">
             <Reveal delay={1}>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
+              <div className="relative rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden group/terminal">
+                {/* Subtle glow behind terminal */}
+                <div
+                  className="absolute -inset-px -z-10 rounded-xl opacity-0 group-hover/terminal:opacity-100 blur-xl transition-opacity duration-500"
+                  style={{
+                    background: "radial-gradient(ellipse at center, rgba(0,212,255,0.06) 0%, transparent 70%)",
+                  }}
+                />
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04] bg-white/[0.01]">
                   <div className="flex gap-1.5" aria-hidden="true">
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]/80" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]/80" />
                   </div>
                   <span className="ml-3 font-mono text-[11px] text-zinc-600">
                     rumble-pulse-agent — session_0x8f2a
                   </span>
                   <div className="ml-auto flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
-                    <span className="font-mono text-[11px] text-zinc-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" aria-hidden="true" />
+                    <span className="font-mono text-[11px] text-emerald-400/70">
                       live
                     </span>
                   </div>

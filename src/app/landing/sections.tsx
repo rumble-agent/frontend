@@ -55,12 +55,12 @@ export function HowItWorks() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-0">
           {steps.map((step, i) => (
             <Reveal key={step.num} delay={i + 1}>
-              <div className={`${i > 0 ? "step-connector md:pl-12" : ""} ${i < 2 ? "md:pr-12 md:border-r md:border-white/[0.04]" : ""}`}>
+              <div className={`group ${i > 0 ? "step-connector md:pl-12" : ""} ${i < 2 ? "md:pr-12 md:border-r md:border-white/[0.04]" : ""}`}>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
+                  <div className="relative w-10 h-10 rounded-lg border border-[#00D4FF]/20 bg-[#00D4FF]/[0.04] flex items-center justify-center transition-all duration-[250ms] group-hover:border-[#00D4FF]/40 group-hover:bg-[#00D4FF]/[0.08] group-hover:shadow-[0_0_16px_rgba(0,212,255,0.12)]">
                     {step.icon}
                   </div>
-                  <span className="font-mono text-[#00D4FF] text-xs">{step.num}</span>
+                  <span className="font-mono text-[#00D4FF]/60 text-xs font-bold">{step.num}</span>
                 </div>
                 <h3 className="font-heading text-xl font-bold mb-3 tracking-[-0.02em]">
                   {step.title}

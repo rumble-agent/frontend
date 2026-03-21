@@ -13,7 +13,12 @@ const TICKER_ITEMS = [
 
 export function Marquee() {
   return (
-    <div className="overflow-hidden border-y border-white/[0.04] py-3 select-none">
+    <div className="relative overflow-hidden border-y border-white/[0.04] py-3 select-none">
+      {/* Left fade */}
+      <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-r from-[#050505] to-transparent z-10 pointer-events-none" />
+      {/* Right fade */}
+      <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-l from-[#050505] to-transparent z-10 pointer-events-none" />
+
       <div className="marquee-track flex gap-8 w-max">
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
           <span
