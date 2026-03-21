@@ -9,13 +9,14 @@ const HLS_SRC =
 function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const tryPlay = () => {
-      video.play().catch(() => { });
+      video.play().then(() => setReady(true)).catch(() => { });
     };
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -62,7 +63,7 @@ function HeroVideo() {
       muted
       playsInline
       aria-hidden="true"
-      className="absolute inset-0 w-full h-full object-cover opacity-20"
+      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${ready ? "opacity-20" : "opacity-0"}`}
     />
   );
 }
