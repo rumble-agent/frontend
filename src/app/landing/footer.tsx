@@ -90,7 +90,7 @@ export function Footer() {
           <div className="flex items-center gap-4 text-[12px] text-zinc-700">
             <span>Apache 2.0</span>
             <span className="w-px h-3 bg-white/[0.06]" />
-            <span>2025</span>
+            <span>2026</span>
           </div>
         </div>
       </div>
